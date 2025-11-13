@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <!-- ========================================================================
+       THÔNG TIN PACKAGE CƠ BẢN
+       ======================================================================== -->
+  <name>mecanum_robot_bringup</name>
+  <version>1.0.0</version>
+  <description>Mecanum robot with dual lidar navigation</description>
+  <maintainer email="vtran13102000@gmail.com">Hoàng Việt</maintainer>
+  <license>MIT</license>
+
+  <!-- ========================================================================
+       BUILD TOOL - Công cụ build cho ROS2
+       ======================================================================== 
+       ament_cmake: Build system chuẩn của ROS2, tương tự CMake
+       Bắt buộc phải có để colcon build hoạt động
+       ======================================================================== -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- ========================================================================
+       ROS2 CORE DEPENDENCIES - Thư viện cốt lõi
+       ======================================================================== 
+       rclpy: ROS Client Library cho Python
+       rclcpp: ROS Client Library cho C++
+       sensor_msgs: Định dạng message cho sensor (LaserScan, IMU, etc)
+       nav_msgs: Message cho navigation (Odometry, Path, OccupancyGrid)
+       geometry_msgs: Message cho hình học (Pose, Twist, Transform)
+       std_msgs: Message chuẩn cơ bản (Int, Float, String, Bool)
+       ======================================================================== -->
+  <depend>rclpy</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <!-- ========================================================================
+       TF2 DEPENDENCIES - Transform Framework 2
+       ======================================================================== 
+       MỤC ĐÍCH: Quản lý hệ tọa độ giữa các phần của robot
+       
+       tf2: Core library cho transform
+       tf2_ros: ROS2 wrapper cho tf2
+       tf2_geometry_msgs: Convert giữa tf2 và geometry_msgs
+       
+       VÍ DỤ: Transform từ base_link → lidar_front → map
+       Giúp robot biết lidar ở đâu so với thân xe, và thân xe ở đâu trên bản đồ
+       ======================================================================== -->
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+
+  <!-- ========================================================================
+       HARDWARE DRIVERS - Driver cho phần cứng
+       ======================================================================== 
+       rplidar_ros: Driver cho cảm biến LiDAR RPLiDAR (A1/A2/A3)
+                    Publish /scan topic (sensor_msgs/LaserScan)
+       
+       robot_state_publisher: Publish transform tree từ URDF
+                              Đọc /joint_states và publish TF cho mỗi link
+       ======================================================================== -->
+  <depend>rplidar_ros</depend>
+  <depend>robot_state_publisher</depend>
+
+  <!-- ========================================================================
+       SLAM & NAVIGATION STACK - Bộ công cụ điều hướng tự động
+       ======================================================================== 
+       slam_toolbox: SLAM algorithm (Simultaneous Localization And Mapping)
+                     Input: /scan (LaserScan)
+                     Output: /map (OccupancyGrid) + robot pose trên map
+       
+       navigation2: Nav2 stack - bộ công cụ điều hướng hoàn chỉnh
+                    Bao gồm: global planner, local planner, recovery behaviors
+       
+       nav2_bringup: Launch files và config mẫu cho Nav2
+       
+       nav2_common: Utilities chung cho Nav2
+       
+       WORKFLOW:
+       1. slam_toolbox tạo map từ lidar
+       2. navigation2 dùng map để tìm đường và tránh vật cản
+       3. Robot tự động đi từ điểm A → B tránh vật cản
+       ======================================================================== -->
+  <depend>slam_toolbox</depend>
+  <depend>navigation2</depend>
+  <depend>nav2_bringup</depend>
+  <depend>nav2_common</depend>
+
+  <!-- ========================================================================
+       URDF TOOLS - Công cụ mô tả robot
+       ======================================================================== 
+       xacro: XML Macro language cho URDF
+              Cho phép dùng biến, macro, if/else trong URDF
+              VD: <xacro:property name="wheel_radius" value="0.05"/>
+       
+       joint_state_publisher: Publish /joint_states (góc quay của bánh xe)
+                              Input: từ encoder/STM32
+                              Output: sensor_msgs/JointState
+       
+       Workflow: URDF (xacro) → robot_state_publisher → TF tree
+       ======================================================================== -->
+  <depend>xacro</depend>
+  <depend>joint_state_publisher</depend>
+
+  <!-- ========================================================================
+       ROBOT_LOCALIZATION - Sensor Fusion cho Odometry
+       ======================================================================== 
+       MỤC ĐÍCH: Kết hợp nhiều nguồn dữ liệu để ước lượng vị trí chính xác hơn
+       
+       INPUT:
+       - Wheel odometry từ encoder (có drift vì bánh mecanum trượt)
+       - IMU gyro (đo góc quay chính xác)
+       - IMU accelerometer (đo gia tốc tuyến tính)
+       
+       OUTPUT:
+       - /odometry/filtered (nav_msgs/Odometry) - Odometry đã fuse
+       - TF: odom → base_link
+       
+       ALGORITHM: Extended Kalman Filter (EKF)
+       
+       LỢI ÍCH:
+       - Giảm drift 60-70% so với chỉ dùng encoder
+       - Góc quay (yaw) chính xác hơn 3-5 lần nhờ IMU gyro
+       - Ổn định hơn khi bánh mecanum trượt ngang
+       
+       CÀI ĐẶT: sudo apt install ros-humble-robot-localization
+       CONFIG: Cần tạo file ekf.yaml để config EKF node
+       ======================================================================== -->
+  <depend>robot_localization</depend>
+
+  <!-- ========================================================================
+       PYTHON DEPENDENCIES - Thư viện Python runtime
+       ======================================================================== 
+       python3-serial: PySerial library
+                       Dùng để giao tiếp UART với STM32/Arduino
+                       
+       VÍ DỤ CODE:
+       import serial
+       ser = serial.Serial('/dev/ttyUSB0', 115200)
+       ser.write(b'cmd:forward\n')
+       data = ser.readline()
+       
+       <exec_depend>: Chỉ cần khi chạy (runtime), không cần khi build
+       ======================================================================== -->
+  <exec_depend>python3-serial</exec_depend>
+
+  <!-- ========================================================================
+       EXPORT - Cấu hình build type
+       ======================================================================== 
+       build_type=ament_cmake: Báo cho colcon biết dùng CMake để build
+       (Nếu là Python package thuần thì dùng ament_python)
+       ======================================================================== -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

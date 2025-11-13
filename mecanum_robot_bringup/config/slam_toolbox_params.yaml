@@ -1,0 +1,113 @@
+# ==============================================================================
+# CẤU HÌNH SLAM TOOLBOX - TẠO BẢN ĐỒ VÀ ĐỊNH VỊ
+# ==============================================================================
+
+
+
+slam_toolbox:
+  ros__parameters:
+    # --------------------------------------------------------------------------
+    # KHUNG TỌA ĐỘ (TF FRAMES)
+    # --------------------------------------------------------------------------
+    odom_frame: odom                 # Khung tọa độ odometry (di chuyển theo thời gian)
+    map_frame: map                   # Khung tọa độ bản đồ (cố định)
+    base_frame: base_link            # Khung tọa độ gốc của robot (chạm đất)
+    scan_topic: /scan_merged         # Topic nhận dữ liệu laser scan
+    odom_topic: /odometry/filtered
+    
+    # --------------------------------------------------------------------------
+    # CHẾ ĐỘ HOẠT ĐỘNG
+    # --------------------------------------------------------------------------
+    mode: mapping                    # Chế độ: "mapping" (tạo bản đồ) hoặc "localization" (chỉ định vị)
+    
+    # --------------------------------------------------------------------------
+    # CẤU HÌNH DEBUG VÀ HIỆU SUẤT
+    # --------------------------------------------------------------------------
+    debug_logging: false             # Tắt log debug (bật = true để debug)
+    throttle_scans: 1                # Xử lý mỗi N scan (1 = xử lý tất cả, 2 = bỏ qua 1 scan)
+    transform_publish_period: 0.02   # Tần số publish transform (s) = 50Hz
+    map_update_interval: 5.0         # Khoảng thời gian cập nhật bản đồ (s)
+    
+    # --------------------------------------------------------------------------
+    # THÔNG SỐ BẢN ĐỒ
+    # --------------------------------------------------------------------------
+    resolution: 0.05                 # Độ phân giải bản đồ (m/cell) - 5cm mỗi ô
+    max_laser_range: 12.0            # Tầm xa tối đa của laser (m) - bỏ qua dữ liệu xa hơn
+    
+    # --------------------------------------------------------------------------
+    # ĐIỀU KIỆN CẬP NHẬT BẢN ĐỒ
+    # --------------------------------------------------------------------------
+    minimum_time_interval: 0.5       # Thời gian tối thiểu giữa 2 lần cập nhật (s)
+    minimum_travel_distance: 0.1     # Quãng đường di chuyển tối thiểu để cập nhật (m)
+    minimum_travel_heading: 0.1      # Góc quay tối thiểu để cập nhật (rad ~11.5°)
+    
+    # --------------------------------------------------------------------------
+    # CẤU HÌNH TRANSFORM (TF)
+    # --------------------------------------------------------------------------
+    transform_timeout: 0.2           # Thời gian chờ transform tối đa (s)
+    tf_buffer_duration: 30.0         # Thời gian lưu trữ TF history (s)
+    stack_size_to_use: 40000000      # Kích thước stack cho thread (40MB)
+    
+    # --------------------------------------------------------------------------
+    # CHỨC NĂNG TƯƠNG TÁC
+    # --------------------------------------------------------------------------
+    enable_interactive_mode: true    # Cho phép điều chỉnh bản đồ thủ công qua RViz
+    
+    # --------------------------------------------------------------------------
+    # SCAN MATCHING - Khớp scan với bản đồ
+    # --------------------------------------------------------------------------
+    use_scan_matching: true          # Bật scan matching (căn chỉnh scan với bản đồ)
+    use_scan_barycenter: true        # Dùng trọng tâm scan để matching (cải thiện độ chính xác)
+    
+    # --------------------------------------------------------------------------
+    # BUFFER QUẢN LÝ SCAN
+    # --------------------------------------------------------------------------
+    scan_buffer_size: 10             # Số lượng scan lưu trong buffer
+    scan_buffer_maximum_scan_distance: 10.0  # Khoảng cách tối đa giữa các scan trong buffer (m)
+    
+    # --------------------------------------------------------------------------
+    # SCAN MATCHING - THAM SỐ TINH CHỈNH
+    # --------------------------------------------------------------------------
+    link_match_minimum_response_fine: 0.2    # Ngưỡng phản hồi tối thiểu cho fine matching
+                                             # Càng thấp = chấp nhận match kém hơn
+                                             # Giá trị hợp lý: 0.1 - 0.5
+    
+    link_scan_maximum_distance: 1.5  # Khoảng cách tối đa để liên kết 2 scan (m)
+                                     # Nếu robot di chuyển > 1.5m giữa 2 scan → không liên kết
+    
+    # --------------------------------------------------------------------------
+    # LOOP CLOSURE - Đóng vòng lặp (khắc phục drift)
+    # --------------------------------------------------------------------------
+    do_loop_closing: true            # Bật chức năng loop closure
+                                     # Khi robot quay lại vị trí cũ → nhận diện và sửa lỗi tích lũy
+    
+    loop_search_maximum_distance: 3.0    # Bán kính tìm kiếm loop closure (m)
+                                         # Tìm các vị trí cũ trong vòng 3m xung quanh
+    
+    loop_match_minimum_chain_size: 10    # Số scan tối thiểu để tạo thành một chuỗi loop
+                                         # Giá trị cao = chặt chẽ hơn, ít loop closure giả
+                                         # Giá trị thấp = nhiều loop closure, có thể có lỗi
+
+# ==============================================================================
+# GHI CHÚ QUAN TRỌNG:
+# 
+# 1. CHẾ ĐỘ MAPPING vs LOCALIZATION:
+#    - mapping: Tạo bản đồ mới, cập nhật liên tục
+#    - localization: Dùng bản đồ có sẵn, chỉ định vị robot
+#
+# 2. MINIMUM_TRAVEL:
+#    - minimum_travel_distance: 0.2m → Robot phải di chuyển 20cm mới cập nhật
+#    - minimum_travel_heading: 0.2 rad → Hoặc xoay ~11.5° mới cập nhật
+#    → Giảm tải CPU, nhưng bản đồ cập nhật chậm hơn
+#
+# 3. LOOP CLOSURE:
+#    - Rất quan trọng cho bản đồ lớn
+#    - Tự động sửa lỗi tích lũy khi robot quay lại điểm cũ
+#    - Nếu bản đồ bị "trôi" → tăng loop_search_maximum_distance lên 4-5m
+#
+# 4. SCAN MATCHING:
+#    - use_scan_barycenter: true → Chính xác hơn nhưng chậm hơn
+#    - link_match_minimum_response_fine: 0.1 → Khá khoan dung
+#      → Nếu bản đồ nhiễu, tăng lên 0.2-0.3
+#
+# ==============================================================================

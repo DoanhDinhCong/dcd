@@ -1,0 +1,283 @@
+# =============================================================================
+# NAVIGATION.RVIZ - Config RViz cho Navigation (Nav2)
+# =============================================================================
+# Mục đích: Hiển thị navigation stack đầy đủ
+# Sử dụng: ros2 run rviz2 rviz2 -d navigation.rviz
+# Displays: Map, Costmaps, Paths, Goal, AMCL, Footprint
+# =============================================================================
+
+
+
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /Map1
+        - /GlobalCostmap1
+        - /LocalCostmap1
+        - /GlobalPath1
+        - /LocalPath1
+      Splitter Ratio: 0.5
+    Tree Height: 549
+  - Class: rviz_common/Selection
+    Name: Selection
+  - Class: rviz_common/Tool Properties
+    Name: Tool Properties
+  - Class: rviz_common/Views
+    Name: Views
+  - Class: nav2_rviz_plugins/Navigation 2    # Panel điều khiển Nav2
+    Name: Navigation 2
+  - Class: rviz_common/Time
+    Name: Time
+    SyncSource: LaserScan
+
+Visualization Manager:
+  Class: ""
+  Displays:
+  
+    # ========================================================================
+    # GRID - Lưới nền
+    # ========================================================================
+    - Alpha: 0.5
+      Cell Size: 1.0
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 50
+      Reference Frame: <Fixed Frame>
+      Value: true
+      
+    # ========================================================================
+    # ROBOT MODEL - Mô hình robot
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/RobotModel
+      Description Topic:
+        Value: /robot_description
+      Enabled: true
+      Name: RobotModel
+      Value: true
+      Visual Enabled: true
+      
+    # ========================================================================
+    # MAP - Bản đồ tĩnh (đã tạo bằng SLAM)
+    # ========================================================================
+    - Alpha: 0.7
+      Class: rviz_default_plugins/Map
+      Color Scheme: map        # Trắng=free, đen=occupied
+      Enabled: true
+      Name: Map
+      Topic:
+        Value: /map            # Bản đồ từ map_server
+      Value: true
+      
+    # ========================================================================
+    # LASER SCAN - Lidar real-time
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/LaserScan
+      Color: 255; 0; 0         # Màu đỏ
+      Enabled: true
+      Name: LaserScan
+      Size (m): 0.05           # Kích thước điểm: 5cm
+      Style: Points
+      Topic:
+        Value: /scan_merged    # LaserScan topic
+      Value: true
+      
+    # ========================================================================
+    # TF - Transform tree (tắt mặc định để giảm tải)
+    # ========================================================================
+    - Class: rviz_default_plugins/TF
+      Enabled: false           # Tắt (bật nếu cần debug TF)
+      Name: TF
+      Show Axes: true
+      Value: false
+      
+    # ========================================================================
+    # GLOBAL COSTMAP - Costmap toàn cục (cho global planner)
+    # ========================================================================
+    - Alpha: 0.4               # Trong suốt 60% để thấy map bên dưới
+      Class: rviz_default_plugins/Map
+      Color Scheme: costmap    # Màu costmap (xanh→đỏ)
+      Enabled: true
+      Name: GlobalCostmap
+      Topic:
+        Value: /global_costmap/costmap
+      Value: true
+      
+    # ========================================================================
+    # LOCAL COSTMAP - Costmap cục bộ (cho local planner/controller)
+    # ========================================================================
+    - Alpha: 0.4               # Trong suốt 60%
+      Class: rviz_default_plugins/Map
+      Color Scheme: costmap
+      Enabled: true
+      Name: LocalCostmap
+      Topic:
+        Value: /local_costmap/costmap
+      Value: true
+      
+    # ========================================================================
+    # GLOBAL PATH - Đường đi toàn cục (từ planner_server)
+    # ========================================================================
+    - Alpha: 1
+      Class: rviz_default_plugins/Path
+      Color: 255; 0; 0         # Màu đỏ
+      Enabled: true
+      Line Width: 0.1          # Độ dày: 10cm
+      Name: GlobalPath
+      Topic:
+        Value: /plan           # Global path từ planner
+      Value: true
+      
+    # ========================================================================
+    # LOCAL PATH - Quỹ đạo cục bộ (từ controller_server)
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/Path
+      Color: 0; 255; 0         # Màu xanh lá
+      Enabled: true
+      Line Width: 0.05         # Độ dày: 5cm (mỏng hơn global)
+      Name: LocalPath
+      Topic:
+        Value: /local_plan     # Local path từ controller
+      Value: true
+      
+    # ========================================================================
+    # GOAL POSE - Điểm đích navigation (màu vàng)
+    # ========================================================================
+    - Alpha: 1
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 255; 255; 0       # Màu vàng
+      Enabled: true
+      Head Length: 0.3
+      Name: GoalPose
+      Topic:
+        Value: /goal_pose
+      Value: true
+      
+    # ========================================================================
+    # AMCL POSE - Vị trí robot từ AMCL (màu xanh lá)
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 0; 255; 0         # Màu xanh lá
+      Covariance:
+        Position:
+          Alpha: 0.3           # Hiển thị covariance nhẹ
+          Value: true
+        Value: true
+      Enabled: true
+      Name: AmclPose
+      Topic:
+        Value: /amcl_pose
+      Value: true
+      
+    # ========================================================================
+    # PARTICLE CLOUD - Các particles AMCL (localization)
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/PoseArray
+      Color: 0; 192; 0         # Màu xanh lá nhạt
+      Enabled: true
+      Head Length: 0.07
+      Name: ParticleCloud
+      Topic:
+        Value: /particle_cloud # Particles từ AMCL
+      Value: true
+      
+    # ========================================================================
+    # FOOTPRINT - Vùng chiếm dụng robot (local)
+    # ========================================================================
+    - Alpha: 1
+      Class: rviz_default_plugins/Polygon
+      Color: 0; 0; 255         # Màu xanh dương
+      Enabled: true
+      Name: LocalFootprint
+      Topic:
+        Value: /local_costmap/published_footprint
+      Value: true
+      
+    # ========================================================================
+    # FOOTPRINT - Vùng chiếm dụng robot (global)
+    # ========================================================================
+    - Alpha: 1.0
+      Class: rviz_default_plugins/Polygon
+      Color: 0; 255; 255       # Màu xanh cyan
+      Enabled: true
+      Name: GlobalFootprint
+      Topic:
+        Value: /global_costmap/published_footprint
+      Value: true
+      
+  Enabled: true
+  
+  # ==========================================================================
+  # GLOBAL OPTIONS
+  # ==========================================================================
+  Global Options:
+    Background Color: 48; 48; 48    # Nền xám đen
+    Fixed Frame: map                # Frame cố định: map
+    Frame Rate: 30
+    
+  Name: root
+  
+  # ==========================================================================
+  # TOOLS - Công cụ điều khiển
+  # ==========================================================================
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/FocusCamera
+    - Class: rviz_default_plugins/Measure
+    - Class: rviz_default_plugins/SetInitialPose    # 2D Pose Estimate
+      Topic:
+        Value: /initialpose
+    - Class: nav2_rviz_plugins/GoalTool             # 2D Nav Goal (Nav2)
+    - Class: rviz_default_plugins/PublishPoint
+      Topic:
+        Value: /clicked_point
+        
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+      
+  Value: true
+  
+  # ==========================================================================
+  # VIEWS - Camera
+  # ==========================================================================
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 20             # Khoảng cách: 20m (xa hơn SLAM)
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Pitch: 1.5698            # Nhìn từ trên xuống
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 3.1416
+    Saved: ~
+
+# =============================================================================
+# WINDOW GEOMETRY
+# =============================================================================
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 846
+  Hide Left Dock: false
+  Hide Right Dock: false
+  Navigation 2:
+    collapsed: false           # Panel Nav2 không thu gọn
+  Width: 1846                  # Rộng hơn SLAM (có thêm panel Nav2)
+  X: 74
+  Y: 27

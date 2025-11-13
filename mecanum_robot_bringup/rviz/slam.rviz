@@ -1,0 +1,364 @@
+# =============================================================================
+# SLAM.RVIZ - Config RViz cho SLAM Mapping
+# =============================================================================
+# Mục đích: Hiển thị bản đồ đang được tạo real-time
+# Sử dụng: ros2 run rviz2 rviz2 -d slam.rviz
+# =============================================================================
+
+# ============================================================================
+# PANELS - Các bảng điều khiển bên trái RViz
+# ============================================================================
+Panels:
+  # Panel hiển thị danh sách displays
+  - Class: rviz_common/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1    # Mở rộng Global Options
+        - /Map1              # Mở rộng Map settings
+        - /LaserScan1        # Mở rộng LaserScan settings
+      Splitter Ratio: 0.5
+    Tree Height: 549
+    
+  # Panel chọn objects
+  - Class: rviz_common/Selection
+    Name: Selection
+    
+  # Panel công cụ (tools)
+  - Class: rviz_common/Tool Properties
+    Expanded:
+      - /2D Goal Pose1
+      - /Publish Point1
+    Name: Tool Properties
+    Splitter Ratio: 0.5886790156364441
+    
+  # Panel điều chỉnh camera view
+  - Class: rviz_common/Views
+    Expanded:
+      - /Current View1
+    Name: Views
+    Splitter Ratio: 0.5
+    
+  # Panel thời gian
+  - Class: rviz_common/Time
+    Experimental: false
+    Name: Time
+    SyncMode: 0
+    SyncSource: LaserScan    # Đồng bộ thời gian với LaserScan
+
+# ============================================================================
+# VISUALIZATION MANAGER - Quản lý tất cả displays
+# ============================================================================
+Visualization Manager:
+  Class: ""
+  Displays:
+  
+    # ========================================================================
+    # GRID - Lưới tọa độ nền (Ground plane)
+    # ========================================================================
+    - Alpha: 0.5               # Độ trong suốt (0=trong suốt, 1=đục)
+      Cell Size: 1.0           # Kích thước mỗi ô lưới: 1m × 1m
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164     # Màu xám nhạt (RGB)
+      Enabled: true            # Bật hiển thị
+      Line Style:
+        Line Width: 0.03       # Độ dày đường: 3cm
+        Value: Lines           # Kiểu: đường kẻ
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0                   # Vị trí tâm lưới
+        Y: 0
+        Z: 0
+      Plane: XY                # Lưới trên mặt phẳng XY (nằm ngang)
+      Plane Cell Count: 50     # Số ô lưới: 50×50 = 2500 ô
+      Reference Frame: <Fixed Frame>
+      Value: true
+      
+    # ========================================================================
+    # ROBOT MODEL - Mô hình 3D robot từ URDF
+    # ========================================================================
+    - Alpha: 1.0               # Độ đục: 100%
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false # Không hiển thị collision meshes
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description    # Topic chứa URDF
+      Enabled: true            # Bật hiển thị robot
+      Links:
+        All Links Enabled: true      # Hiển thị tất cả links
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0       # Update liên tục (0 = nhanh nhất)
+      Value: true
+      Visual Enabled: true     # Hiển thị visual meshes
+      
+    # ========================================================================
+    # MAP - Bản đồ đang được SLAM tạo
+    # ========================================================================
+    - Alpha: 0.7               # Độ trong suốt: 70% (để thấy LaserScan phía dưới)
+      Class: rviz_default_plugins/Map
+      Color Scheme: map        # Màu: trắng=free, đen=occupied, xám=unknown
+      Draw Behind: false       # Vẽ trên các layer khác
+      Enabled: true            # Bật hiển thị map
+      Name: Map
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /map            # Topic map từ SLAM Toolbox
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /map_updates    # Topic updates (chỉ phần thay đổi)
+      Use Timestamp: false
+      Value: true
+      
+    # ========================================================================
+    # LASER SCAN - Dữ liệu Lidar real-time
+    # ========================================================================
+    - Alpha: 1.0                 # Độ đục: 100%
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/LaserScan
+      Color: 255; 0; 0         # Màu đỏ (RGB) - dễ nhìn trên map
+      Color Transformer: FlatColor
+      Decay Time: 0            # Không fade (giữ mãi)
+      Enabled: true            # Bật hiển thị
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 0
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3         # Kích thước điểm: 3 pixels
+      Size (m): 0.05           # Kích thước điểm: 5cm
+      Style: Points            # Kiểu hiển thị: điểm
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /scan_merged    # Topic LaserScan (hoặc /scan nếu dùng 1 lidar)
+      Use Fixed Frame: true
+      Use rainbow: true        # Dùng màu rainbow theo khoảng cách
+      Value: true
+      
+    # ========================================================================
+    # TF - Transform tree (khung tọa độ)
+    # ========================================================================
+    - Class: rviz_default_plugins/TF
+      Enabled: true            # Bật hiển thị TF
+      Frame Timeout: 15        # Timeout nếu frame không update trong 15s
+      Frames:
+        All Enabled: true      # Hiển thị tất cả frames
+      Marker Scale: 0.3        # Kích thước mũi tên TF: 30cm
+      Name: TF
+      Show Arrows: true        # Hiển thị mũi tên (chỉ hướng)
+      Show Axes: true          # Hiển thị trục XYZ
+      Show Names: true         # Hiển thị tên frame
+      Tree:
+        {}                     # Cây TF (tự động load)
+      Update Interval: 0       # Update liên tục
+      Value: true
+      
+    # ========================================================================
+    # ODOMETRY - Trajectory từ odometry
+    # ========================================================================
+    - Angle Tolerance: 0.1     # Tolerance góc để vẽ pose mới: 0.1 rad (~6°)
+      Class: rviz_default_plugins/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5           # Độ trong suốt covariance góc: 50%
+          Color: 255; 255; 127 # Màu vàng nhạt
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true          # Hiển thị covariance góc
+        Position:
+          Alpha: 0.3           # Độ trong suốt covariance vị trí: 30%
+          Color: 204; 51; 204  # Màu tím
+          Scale: 1
+          Value: true          # Hiển thị covariance vị trí
+        Value: true
+      Enabled: true            # Bật hiển thị odometry
+      Keep: 100                # Giữ lại 100 poses gần nhất
+      Name: Odometry
+      Position Tolerance: 0.1  # Tolerance vị trí để vẽ pose mới: 10cm
+      Shape:
+        Alpha: 1.0
+        Axes Length: 0.3       # Độ dài trục XYZ: 30cm
+        Axes Radius: 0.03      # Bán kính trục: 3cm
+        Color: 255; 25; 0      # Màu đỏ cam
+        Head Length: 0.2       # Độ dài đầu mũi tên: 20cm
+        Head Radius: 0.1       # Bán kính đầu mũi tên: 10cm
+        Shaft Length: 0.5      # Độ dài thân mũi tên: 50cm
+        Shaft Radius: 0.05     # Bán kính thân mũi tên: 5cm
+        Value: Arrow           # Kiểu: mũi tên
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /odom           # Topic odometry
+      Value: true
+      
+    # ========================================================================
+    # PATH - Trajectory robot (đường đi)
+    # ========================================================================
+    - Alpha: 1.0                 # Độ đục: 100%
+      Buffer Length: 1         # Độ dài buffer: 1s
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0        # Màu xanh lá sáng (dễ thấy)
+      Enabled: true            # Bật hiển thị
+      Head Diameter: 0.3       # Đường kính đầu mũi tên: 30cm
+      Head Length: 0.2         # Độ dài đầu mũi tên: 20cm
+      Length: 0.3              # Độ dài mũi tên: 30cm
+      Line Style: Billboards   # Kiểu đường: billboards (luôn quay về camera)
+      Line Width: 0.1          # Độ dày đường: 10cm
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255 # Màu tím hồng
+      Pose Style: None         # Không hiển thị từng pose
+      Radius: 0.03             # Bán kính: 3cm
+      Shaft Diameter: 0.1      # Đường kính thân: 10cm
+      Shaft Length: 0.1        # Độ dài thân: 10cm
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /trajectory     # Topic trajectory (nếu có)
+      Value: true
+      
+  Enabled: true
+
+  # ==========================================================================
+  # GLOBAL OPTIONS - Cài đặt toàn cục
+  # ==========================================================================
+  Global Options:
+    Background Color: 48; 48; 48    # Màu nền: xám đen (dễ nhìn)
+    Fixed Frame: map                # Frame cố định: map (từ SLAM)
+    Frame Rate: 30                  # FPS: 30 (mượt mà)
+    
+  Name: root
+  
+  # ==========================================================================
+  # TOOLS - Công cụ tương tác
+  # ==========================================================================
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera      # Di chuyển camera
+    - Class: rviz_default_plugins/Select          # Chọn object
+    - Class: rviz_default_plugins/FocusCamera     # Focus vào object
+    - Class: rviz_default_plugins/Measure         # Đo khoảng cách
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetInitialPose  # Set vị trí ban đầu (2D Pose Estimate)
+      Covariance x: 0.25              # Covariance X: ±25cm
+      Covariance y: 0.25              # Covariance Y: ±25cm
+      Covariance yaw: 0.0685          # Covariance góc: ±4°
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /initialpose   # Topic initial pose
+    - Class: rviz_default_plugins/SetGoal         # Set goal (2D Nav Goal)
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose     # Topic goal
+    - Class: rviz_default_plugins/PublishPoint    # Publish điểm (Publish Point)
+      Single click: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /clicked_point # Topic điểm được click
+        
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+      
+  Value: true
+  
+  # ==========================================================================
+  # VIEWS - Cài đặt camera/góc nhìn
+  # ==========================================================================
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit    # Kiểu camera: Orbit (quay quanh)
+      Distance: 15                          # Khoảng cách: 15m
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false                        # Không dùng stereo
+      Focal Point:                          # Điểm focus (trung tâm)
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01              # Khoảng cách clip gần: 1cm
+      Pitch: 1.5698                         # Góc pitch: ~90° (nhìn từ trên xuống)
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 3.1416                           # Góc yaw: 180°
+    Saved: ~
+
+# =============================================================================
+# WINDOW GEOMETRY - Kích thước cửa sổ RViz
+# =============================================================================
+Window Geometry:
+  Displays:
+    collapsed: false    # Panel Displays không thu gọn
+  Height: 846           # Chiều cao cửa sổ: 846 pixels
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd000000040000000000000156000002b0fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d000002b0000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f000002b0fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d000002b0000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b00000003efc0100000002fb0000000800540069006d00650100000000000004b0000002fb00fffffffb0000000800540069006d006501000000000000045000000000000000000000023f000002b000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Selection:
+    collapsed: false
+  Time:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Views:
+    collapsed: false
+  Width: 1200          # Chiều rộng cửa sổ: 1200 pixels
+  X: 100               # Vị trí X trên màn hình: 100
+  Y: 100               # Vị trí Y trên màn hình: 100
