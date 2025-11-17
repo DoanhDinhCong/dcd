@@ -75,6 +75,7 @@ def generate_launch_description():
             'echo_tx': False,
             'echo_rx': False,
             'ticks_per_rev': 6864.0,
+            #'ticks_per_rev': 8112.0,
             'wheel_joint_names': ['wheel_fl_joint', 'wheel_fr_joint', 'wheel_rr_joint', 'wheel_rl_joint'],
             'invert_wheels': [True, True, True, True]
         }],
