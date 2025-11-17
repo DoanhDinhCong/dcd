@@ -168,7 +168,8 @@ class VelocityBridgeVfmt(Node):
         #   - Nếu có thêm bánh răng giảm tốc 1:10 → 6864 xung/vòng bánh
         # ⚠️ CẦN ĐO CHÍNH XÁC: Cho bánh quay 1 vòng, đếm xung encoder
         self.declare_parameter('ticks_per_rev', 6864.0)
-        
+        #self.declare_parameter('ticks_per_rev', 8112.0)
+      
         # Tên các joint bánh xe trong URDF
         # Thứ tự: [Front-Left, Front-Right, Rear-Right, Rear-Left]
         # Phải khớp với URDF: <joint name="wheel_fl_joint" ...>
