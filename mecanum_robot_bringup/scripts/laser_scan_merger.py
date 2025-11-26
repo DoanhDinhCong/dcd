@@ -6,8 +6,8 @@ Node này merge dữ liệu từ 2 RPLidar A1M8 thành 1 scan 360° duy nhất.
 2 LiDAR được gắn ở 2 góc đối diện để giảm điểm mù.
 
 Cấu hình LiDAR:
-- LiDAR 1: Góc trước-phải, xoay 180° (phủ bên phải + trước)
-- LiDAR 2: Góc sau-trái, xoay 0° (phủ bên trái + sau)
+- LiDAR 1: Góc trước-trái, xoay 180° (phủ bên trước + trái)
+- LiDAR 2: Góc sau-phải, xoay 0° (phủ bên phải+sau)
 
 Chức năng merger:
 - Đồng bộ thời gian giữa 2 scan

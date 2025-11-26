@@ -33,13 +33,13 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """
     Tạo launch description chứa 3 nodes:
-    1. lidar1_node: RPLidar thứ nhất (góc trước-phải)
-    2. lidar2_node: RPLidar thứ hai (góc sau-trái)
+    1. lidar1_node: RPLidar thứ nhất (góc trước-trái)
+    2. lidar2_node: RPLidar thứ hai (góc sau-phải)
     3. laser_merger: Node merge 2 scan thành 1
     """
     
     # ==========================================================================
-    # LIDAR 1 NODE - RPLidar A1M8 góc trước-phải (xoay 180° trong URDF)
+    # LIDAR 1 NODE - RPLidar A1M8 góc trước-trái (xoay 180° trong URDF)
     # ==========================================================================
     lidar1_node = Node(
         package='rplidar_ros',           # Package ROS2 driver cho RPLidar
@@ -87,7 +87,7 @@ def generate_launch_description():
     )
     
     # ==========================================================================
-    # LIDAR 2 NODE - RPLidar A1M8 góc sau-trái (Không xoay URDF)
+    # LIDAR 2 NODE - RPLidar A1M8 góc sau-phải (Không xoay URDF)
     # ==========================================================================
     lidar2_node = Node(
         package='rplidar_ros',
