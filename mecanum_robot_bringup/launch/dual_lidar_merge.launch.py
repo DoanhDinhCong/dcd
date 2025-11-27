@@ -123,8 +123,6 @@ def generate_launch_description():
     # ==========================================================================
     # LASER SCAN MERGER NODE - Merge 2 scan thành 1 scan 360°
     # ==========================================================================
-    # ⚠️ Node này là CUSTOM Python script trong package của bạn!
-    # ⚠️ Phải đảm bảo file laser_scan_merger.py tồn tại và executable
     
     laser_merger = Node(
         package='mecanum_robot_bringup',         # Package chứa script merger

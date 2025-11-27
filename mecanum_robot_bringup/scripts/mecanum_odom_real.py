@@ -7,11 +7,6 @@
 # - Tính vận tốc robot (vx, vy, wz) theo kinematic mecanum
 # - Tích phân để tính vị trí (x, y, theta)
 # - Publish Odometry message và TF transform
-# 
-# ✅ ĐÃ SỬA 3 LỖI:
-# 1. LỖI CRITICAL #3: Frame_id không nhất quán (base_link vs base_footprint)
-# 2. LỖI MAJOR #6: Thiếu parameter invert_wheels
-# 3. LỖI MINOR #11: Covariance quá lạc quan (tăng lên cho bánh mecanum)
 # =============================================================================
 
 """
@@ -70,12 +65,9 @@ class MecanumOdometryReal(Node):
         self.declare_parameter('publish_tf', True)
         
         # =====================================================================
-        # ✅ SỬA LỖI MAJOR #6: THÊM PARAMETER INVERT_WHEELS
+        # ✅  THÊM PARAMETER INVERT_WHEELS
         # =====================================================================
-        # LÝ DO: Nếu velocity_bridge đảo bánh mà odometry không đảo
-        #        → vận tốc sẽ bị ngược chiều → odometry sai hoàn toàn
-        # GIẢI PHÁP: Thêm parameter giống hệt velocity_bridge
-        # LƯU Ý: Giá trị PHẢI GIỐNG velocity_bridge.py 100%!
+        # 
         # =====================================================================
         self.declare_parameter('invert_wheels', [True, True, True, True])
         
@@ -129,20 +121,14 @@ class MecanumOdometryReal(Node):
 
         
         # =====================================================================
-        # ✅ SỬA LỖI MAJOR #6: ÁP DỤNG INVERT_WHEELS
+        # ✅  ÁP DỤNG INVERT_WHEELS
         # =====================================================================
         # Lấy vận tốc góc bánh (đã được velocity_bridge invert rồi)
-        # Nhưng để chắc chắn, ta áp dụng invert thêm 1 lần nữa nếu cần
         # =====================================================================
-        v_fl = msg.velocity[0] 
-        v_fr = msg.velocity[1]
-        v_rr = msg.velocity[2]
-        v_rl = msg.velocity[3]
-        
-        # Áp dụng invert (nếu velocity_bridge đã invert rồi thì không cần)
-        # Nhưng để an toàn, ta có thể dùng như sau:
-        # if self.invert[0]: v_fl = -v_fl
-        # (Tuy nhiên velocity_bridge đã xử lý rồi, nên ta bỏ qua bước này)
+        v_fl = msg.velocity[fl_idx] 
+        v_fr = msg.velocity[fr_idx]
+        v_rr = msg.velocity[rr_idx]
+        v_rl = msg.velocity[rl_idx]
         
         # =====================================================================
         # MECANUM KINEMATIC FORWARD
@@ -154,6 +140,8 @@ class MecanumOdometryReal(Node):
         vy_robot = r / 4.0 * (-v_fl + v_fr - v_rr + v_rl)
         wz = r / (4.0 * self.lx_ly) * (-v_fl + v_fr + v_rr - v_rl)
         
+        
+
         # =====================================================================
         # INTEGRATION - Tích phân vận tốc thành vị trí
         # =====================================================================
@@ -183,15 +171,7 @@ class MecanumOdometryReal(Node):
         qw = math.cos(self.theta / 2.0)
         
         # =====================================================================
-        # ✅ SỬA LỖI CRITICAL #3: THỐNG NHẤT FRAME_ID = base_footprint
-        # =====================================================================
-        # LỖI CŨ: TF dùng 'base_link', Odometry dùng 'base_footprint' → lỗi TF!
-        # SỬA THÀNH: Cả hai đều dùng 'base_footprint' (theo chuẩn ROS)
-        # 
-        # GIẢI THÍCH:
-        # - base_footprint: Projection của robot lên mặt đất (z=0)
-        # - base_link: Center of robot (có thể cao hơn mặt đất)
-        # - Với mecanum không có suspension → dùng base_footprint đơn giản hơn
+        # PUBLISHING - Gửi Odometry và TF
         # =====================================================================
         
         # Publish TF transform
@@ -233,15 +213,8 @@ class MecanumOdometryReal(Node):
         odom.twist.twist.angular.z = wz
         
         # =====================================================================
-        # ✅ SỬA LỖI MINOR #11: TĂNG COVARIANCE CHO MECANUM WHEEL
+        # ✅ TĂNG COVARIANCE CHO MECANUM WHEEL
         # =====================================================================
-        # LỖI CŨ: Covariance = 0.01 (quá lạc quan)
-        # SỬA THÀNH: Covariance = 0.1 cho x,y và 0.2 cho theta
-        # 
-        # LÝ DO:
-        # - Bánh mecanum HAY TRƯỢT → odometry không chính xác
-        # - Covariance cao → SLAM sẽ tin lidar nhiều hơn odometry
-        # - Covariance thấp → SLAM tin odometry nhiều → drift
         # 
         # HƯỚNG DẪN ĐIỀU CHỈNH:
         # 1. Cho robot đi thẳng 5m, đo sai số thực tế

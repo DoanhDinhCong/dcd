@@ -18,17 +18,7 @@ install(DIRECTORY
 )
 
 # ========================================================================
-# ✅ SỬA LỖI MAJOR #9: XÓA encoder_joint_publisher.py
-# ========================================================================
-# LÝ DO: File này TRÙNG chức năng với velocity_bridge.py
-#        - Cả 2 đều đọc encoder từ STM32
-#        - Cả 2 đều publish JointState
-#        - Chạy cả 2 sẽ gây conflict và tốn CPU
-# 
-# GIẢI PHÁP: Chỉ dùng velocity_bridge.py vì nó đầy đủ hơn:
-#            - Có cả TX (gửi cmd_vel) và RX (đọc encoder)
-#            - Có watchdog timeout
-#            - Có log control
+# Cài đặt các script Python
 # ========================================================================
 
 install(PROGRAMS
@@ -36,7 +26,6 @@ install(PROGRAMS
   scripts/mecanum_odom_real.py
   scripts/hwt901b_driver.py
   scripts/laser_scan_merger.py
-  scripts/test_odometry_comparison.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

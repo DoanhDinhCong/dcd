@@ -7,7 +7,7 @@
   <name>mecanum_robot_bringup</name>
   <version>1.0.0</version>
   <description>Mecanum robot with dual lidar navigation</description>
-  <maintainer email="vtran13102000@gmail.com">Hoàng Việt</maintainer>
+  <maintainer email="doanha1k12@gmail.com">dcd</maintainer>
   <license>MIT</license>
 
   <!-- ========================================================================
@@ -103,31 +103,7 @@
   <depend>xacro</depend>
   <depend>joint_state_publisher</depend>
 
-  <!-- ========================================================================
-       ROBOT_LOCALIZATION - Sensor Fusion cho Odometry
-       ======================================================================== 
-       MỤC ĐÍCH: Kết hợp nhiều nguồn dữ liệu để ước lượng vị trí chính xác hơn
-       
-       INPUT:
-       - Wheel odometry từ encoder (có drift vì bánh mecanum trượt)
-       - IMU gyro (đo góc quay chính xác)
-       - IMU accelerometer (đo gia tốc tuyến tính)
-       
-       OUTPUT:
-       - /odometry/filtered (nav_msgs/Odometry) - Odometry đã fuse
-       - TF: odom → base_link
-       
-       ALGORITHM: Extended Kalman Filter (EKF)
-       
-       LỢI ÍCH:
-       - Giảm drift 60-70% so với chỉ dùng encoder
-       - Góc quay (yaw) chính xác hơn 3-5 lần nhờ IMU gyro
-       - Ổn định hơn khi bánh mecanum trượt ngang
-       
-       CÀI ĐẶT: sudo apt install ros-humble-robot-localization
-       CONFIG: Cần tạo file ekf.yaml để config EKF node
-       ======================================================================== -->
-  <depend>robot_localization</depend>
+ 
 
   <!-- ========================================================================
        PYTHON DEPENDENCIES - Thư viện Python runtime
