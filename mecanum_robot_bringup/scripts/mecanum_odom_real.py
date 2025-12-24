@@ -71,6 +71,8 @@ class MecanumOdometryReal(Node):
         # =====================================================================
         self.declare_parameter('invert_wheels', [True, True, True, True])
         
+        
+
         self.wheel_radius = self.get_parameter('wheel_radius').value
         lx = self.get_parameter('wheel_base_length').value / 2.0
         ly = self.get_parameter('wheel_base_width').value / 2.0
@@ -78,6 +80,8 @@ class MecanumOdometryReal(Node):
         self.publish_tf = self.get_parameter('publish_tf').value
         self.invert = self.get_parameter('invert_wheels').value
         
+
+
         # Odometry state
         self.x = 0.0
         self.y = 0.0
@@ -98,7 +102,8 @@ class MecanumOdometryReal(Node):
         self.get_logger().info(f'   - Wheel radius: {self.wheel_radius}m')
         self.get_logger().info(f'   - Base: {self.get_parameter("wheel_base_length").value}m x {self.get_parameter("wheel_base_width").value}m')
         self.get_logger().info(f'   - Invert wheels: {self.invert}')
-    
+        
+
     def joint_states_callback(self, msg: JointState):
         """Callback nhận vận tốc bánh từ velocity_bridge"""
         
@@ -125,11 +130,14 @@ class MecanumOdometryReal(Node):
         # =====================================================================
         # Lấy vận tốc góc bánh (đã được velocity_bridge invert rồi)
         # =====================================================================
-        v_fl = msg.velocity[fl_idx] 
-        v_fr = msg.velocity[fr_idx]
-        v_rr = msg.velocity[rr_idx]
-        v_rl = msg.velocity[rl_idx]
+        v_fl = msg.velocity[fl_idx]  
+        v_fr = msg.velocity[fr_idx]  
+        v_rr = msg.velocity[rr_idx] 
+        v_rl = msg.velocity[rl_idx] 
         
+       
+        
+
         # =====================================================================
         # MECANUM KINEMATIC FORWARD
         # =====================================================================
@@ -140,7 +148,11 @@ class MecanumOdometryReal(Node):
         vy_robot = r / 4.0 * (-v_fl + v_fr - v_rr + v_rl)
         wz = r / (4.0 * self.lx_ly) * (-v_fl + v_fr + v_rr - v_rl)
         
+       
+
         
+    
+
 
         # =====================================================================
         # INTEGRATION - Tích phân vận tốc thành vị trí
@@ -163,6 +175,9 @@ class MecanumOdometryReal(Node):
         self.y += delta_y
         self.theta += delta_theta
         
+        
+        
+
         # Normalize theta về [-pi, pi]
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
         
