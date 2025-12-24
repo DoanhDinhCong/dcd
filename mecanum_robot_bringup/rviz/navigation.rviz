@@ -21,12 +21,6 @@ Panels:
         - /LocalPath1
       Splitter Ratio: 0.5
     Tree Height: 549
-  - Class: rviz_common/Selection
-    Name: Selection
-  - Class: rviz_common/Tool Properties
-    Name: Tool Properties
-  - Class: rviz_common/Views
-    Name: Views
   - Class: nav2_rviz_plugins/Navigation 2    # Panel điều khiển Nav2
     Name: Navigation 2
   - Class: rviz_common/Time
@@ -68,26 +62,55 @@ Visualization Manager:
     # ========================================================================
     - Alpha: 0.7
       Class: rviz_default_plugins/Map
-      Color Scheme: map        # Trắng=free, đen=occupied
+      Color Scheme: map
       Enabled: true
       Name: Map
       Topic:
-        Value: /map            # Bản đồ từ map_server
+        Value: /map
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
       Value: true
       
     # ========================================================================
     # LASER SCAN - Lidar real-time
     # ========================================================================
-    - Alpha: 1.0
+    - Alpha: 1.0                 # Độ đục: 100%
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 12            # Khoảng cách tối đa hiển thị: 10m
+        Min Value: 0             # Khoảng cách tối thiểu: 0m
+        Value: true
+      Axis: Z
+      Channel Name: x
       Class: rviz_default_plugins/LaserScan
-      Color: 255; 0; 0         # Màu đỏ
-      Enabled: true
+      Color: 255; 0; 0           # Màu này sẽ bị override bởi rainbow
+      Color Transformer: Intensity  # Đổi sang Intensity để dùng rainbow
+      Decay Time: 0              # Không fade (giữ mãi)
+      Enabled: true              # Bật hiển thị
+      Invert Rainbow: false      # Không đảo ngược màu (đỏ=gần, tím=xa)
+      Max Color: 255; 255; 255   # Màu trắng (xa nhất)
+      Max Intensity: 12          # Cường độ tối đa (khoảng cách xa nhất)
+      Min Color: 0; 0; 0         # Màu đen (gần nhất)
+      Min Intensity: 0           # Cường độ tối thiểu (khoảng cách gần nhất)
       Name: LaserScan
-      Size (m): 0.05           # Kích thước điểm: 5cm
-      Style: Points
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3           # Kích thước điểm: 3 pixels
+      Size (m): 0.05             # Kích thước điểm: 5cm
+      Style: Points              # Kiểu hiển thị: điểm
       Topic:
-        Value: /scan_merged    # LaserScan topic
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /scan_merged      # Topic LaserScan
+      Use Fixed Frame: true
+      Use rainbow: true          # BẬT rainbow - hiển thị 7 màu cầu vồng
       Value: true
+      
       
     # ========================================================================
     # TF - Transform tree (tắt mặc định để giảm tải)
@@ -101,26 +124,36 @@ Visualization Manager:
     # ========================================================================
     # GLOBAL COSTMAP - Costmap toàn cục (cho global planner)
     # ========================================================================
-    - Alpha: 0.4               # Trong suốt 60% để thấy map bên dưới
+    - Alpha: 0.4
       Class: rviz_default_plugins/Map
-      Color Scheme: costmap    # Màu costmap (xanh→đỏ)
+      Color Scheme: costmap
       Enabled: true
       Name: GlobalCostmap
       Topic:
         Value: /global_costmap/costmap
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
       Value: true
+
       
     # ========================================================================
     # LOCAL COSTMAP - Costmap cục bộ (cho local planner/controller)
     # ========================================================================
-    - Alpha: 0.4               # Trong suốt 60%
+    - Alpha: 0.4
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
       Enabled: true
       Name: LocalCostmap
       Topic:
         Value: /local_costmap/costmap
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
       Value: true
+
       
     # ========================================================================
     # GLOBAL PATH - Đường đi toàn cục (từ planner_server)

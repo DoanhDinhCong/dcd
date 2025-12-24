@@ -9,11 +9,6 @@
 # - Publish Odometry message và TF transform
 # =============================================================================
 
-"""
-
-"""
-
-
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
@@ -46,16 +41,7 @@ class MecanumOdometryReal(Node):
     
     def __init__(self):
         super().__init__('mecanum_odometry_real')
-        # =====================================================================
-        # JOINT NAMES - Tên các bánh xe trong URDF
-        # =====================================================================
-        self.joint_names = [
-        'wheel_fl_joint',  # Front Left
-        'wheel_fr_joint',  # Front Right  
-        'wheel_rr_joint',  # Rear Right
-        'wheel_rl_joint'   # Rear Left
-         ]
-
+        
         # =====================================================================
         # ROBOT DIMENSIONS
         # =====================================================================
@@ -65,14 +51,16 @@ class MecanumOdometryReal(Node):
         self.declare_parameter('publish_tf', True)
         
         # =====================================================================
-        # ✅  THÊM PARAMETER INVERT_WHEELS
-        # =====================================================================
-        # 
+        # WHEEL JOINT NAMES (PHẢI GIỐNG VỚI URDF VÀ velocity_bridge.py)
         # =====================================================================
         self.declare_parameter('invert_wheels', [True, True, True, True])
         
-        
-
+        self.joint_names = [
+            'wheel_fl_joint',
+            'wheel_fr_joint',
+            'wheel_rr_joint',
+            'wheel_rl_joint'
+        ]
         self.wheel_radius = self.get_parameter('wheel_radius').value
         lx = self.get_parameter('wheel_base_length').value / 2.0
         ly = self.get_parameter('wheel_base_width').value / 2.0
@@ -80,8 +68,6 @@ class MecanumOdometryReal(Node):
         self.publish_tf = self.get_parameter('publish_tf').value
         self.invert = self.get_parameter('invert_wheels').value
         
-
-
         # Odometry state
         self.x = 0.0
         self.y = 0.0
@@ -102,8 +88,7 @@ class MecanumOdometryReal(Node):
         self.get_logger().info(f'   - Wheel radius: {self.wheel_radius}m')
         self.get_logger().info(f'   - Base: {self.get_parameter("wheel_base_length").value}m x {self.get_parameter("wheel_base_width").value}m')
         self.get_logger().info(f'   - Invert wheels: {self.invert}')
-        
-
+    
     def joint_states_callback(self, msg: JointState):
         """Callback nhận vận tốc bánh từ velocity_bridge"""
         
@@ -126,17 +111,12 @@ class MecanumOdometryReal(Node):
 
         
         # =====================================================================
-        # ✅  ÁP DỤNG INVERT_WHEELS
+        # LẤY VẬN TỐC BÁNH
         # =====================================================================
-        # Lấy vận tốc góc bánh (đã được velocity_bridge invert rồi)
-        # =====================================================================
-        v_fl = msg.velocity[fl_idx]  
-        v_fr = msg.velocity[fr_idx]  
-        v_rr = msg.velocity[rr_idx] 
-        v_rl = msg.velocity[rl_idx] 
-        
-       
-        
+        v_fl = msg.velocity[fl_idx] 
+        v_fr = msg.velocity[fr_idx]
+        v_rr = msg.velocity[rr_idx]
+        v_rl = msg.velocity[rl_idx]
 
         # =====================================================================
         # MECANUM KINEMATIC FORWARD
@@ -148,12 +128,6 @@ class MecanumOdometryReal(Node):
         vy_robot = r / 4.0 * (-v_fl + v_fr - v_rr + v_rl)
         wz = r / (4.0 * self.lx_ly) * (-v_fl + v_fr + v_rr - v_rl)
         
-       
-
-        
-    
-
-
         # =====================================================================
         # INTEGRATION - Tích phân vận tốc thành vị trí
         # =====================================================================
@@ -175,9 +149,6 @@ class MecanumOdometryReal(Node):
         self.y += delta_y
         self.theta += delta_theta
         
-        
-        
-
         # Normalize theta về [-pi, pi]
         self.theta = math.atan2(math.sin(self.theta), math.cos(self.theta))
         
@@ -186,7 +157,7 @@ class MecanumOdometryReal(Node):
         qw = math.cos(self.theta / 2.0)
         
         # =====================================================================
-        # PUBLISHING - Gửi Odometry và TF
+        # PUBLISH ODOMETRY AND TF
         # =====================================================================
         
         # Publish TF transform
@@ -228,14 +199,7 @@ class MecanumOdometryReal(Node):
         odom.twist.twist.angular.z = wz
         
         # =====================================================================
-        # ✅ TĂNG COVARIANCE CHO MECANUM WHEEL
-        # =====================================================================
-        # 
-        # HƯỚNG DẪN ĐIỀU CHỈNH:
-        # 1. Cho robot đi thẳng 5m, đo sai số thực tế
-        # 2. Sai số < 5cm → covariance = 0.01 (tốt)
-        # 3. Sai số 5-10cm → covariance = 0.05-0.1 (trung bình)
-        # 4. Sai số > 10cm → covariance = 0.1-0.2 (kém - mecanum thường vậy)
+        # COVARIANCE - ĐIỀU CHỈNH CHO BÁNH MECANUM
         # =====================================================================
         
         # Pose covariance [x, y, z, rot_x, rot_y, rot_z]

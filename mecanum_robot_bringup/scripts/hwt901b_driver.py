@@ -115,7 +115,7 @@ class HWT901BDriver(Node):
         # 
         # Nếu CHƯA cấu hình → phải dùng 9600!
         # =====================================================================
-        self.declare_parameter('baudrate', 9600)  # ✅ Giữ 9600 (mặc định xuất xưởng)
+        self.declare_parameter('baudrate', 57600)  # ✅ Giữ 9600 (mặc định xuất xưởng)
         
         # Frame ID - Khung tọa độ của IMU trong cây TF
         # Phải khớp với URDF: <link name="imu_link">
@@ -556,12 +556,12 @@ class HWT901BDriver(Node):
         self.imu_pub.publish(msg)
         
         # Cập nhật thống kê
-        self.publish_count += 1
-        if self.publish_count % 100 == 0:
-            self.get_logger().info(
-                f'📊 Thống kê: Đã xuất bản {self.publish_count} message IMU '
-                f'(Gói tin: {self.packet_count}, Lỗi: {self.error_count})'
-            )
+        #self.publish_count += 1
+        #if self.publish_count % 100 == 0:
+        #    self.get_logger().info(
+        #        f'📊 Thống kê: Đã xuất bản {self.publish_count} message IMU '
+        #        f'(Gói tin: {self.packet_count}, Lỗi: {self.error_count})'
+        #    )
         
         # Reset cờ để chờ chu kỳ tiếp theo
         self.has_acc = False
@@ -683,7 +683,7 @@ CÁCH CHẠY NODE
    ros2 run mecanum_robot_bringup hwt901b_driver.py \\
        --ros-args \\
        -p port:=/dev/ttyUSB2 \\
-       -p baudrate:=9600 \\
+       -p baudrate:=57600 \\
        -p frame_id:=imu_link
 
 2. CHẠY TRONG LAUNCH FILE:

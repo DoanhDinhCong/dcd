@@ -6,8 +6,8 @@ Node này merge dữ liệu từ 2 RPLidar A1M8 thành 1 scan 360° duy nhất.
 2 LiDAR được gắn ở 2 góc đối diện để giảm điểm mù.
 
 Cấu hình LiDAR:
-- LiDAR 1: Góc trước-trái, xoay 180° (phủ bên trước + trái)
-- LiDAR 2: Góc sau-phải, xoay 0° (phủ bên phải+sau)
+- LiDAR 1: Góc trước-trái, xoay 180° (phủ bên trái + trước)
+- LiDAR 2: Góc sau-phải, xoay 0° (phủ bên phải + sau)
 
 Chức năng merger:
 - Đồng bộ thời gian giữa 2 scan
@@ -85,7 +85,7 @@ class LaserScanMerger(Node):
         self.declare_parameter('range_max', 12.0)  # Khoảng cách tối đa hợp lệ (m) - RPLidar A1M8 max
         
         # Time synchronization - Đồng bộ thời gian
-        self.declare_parameter('time_sync_threshold', 0.1)  # Chênh lệch thời gian tối đa cho phép (s)
+        self.declare_parameter('time_sync_threshold', 0.05)  # Chênh lệch thời gian tối đa cho phép (s)
                                                             # Nếu scan1 và scan2 cách nhau >0.1s → không merge
         
         # Overlap handling - Xử lý vùng chồng lấp (cả 2 LiDAR cùng quét)
@@ -94,6 +94,21 @@ class LaserScanMerger(Node):
                                                              # 'average': Lấy trung bình
                                                              # 'newest': Chọn scan mới nhất
         
+        # ====================================================================
+        # LIDAR LOCAL ANGLE FILTER (theo frame của từng LiDAR)
+        # ====================================================================
+        self.declare_parameter('scan1_angle_min', -math.pi)
+        self.declare_parameter('scan1_angle_max',  math.pi)
+
+        self.declare_parameter('scan2_angle_min', -math.pi)
+        self.declare_parameter('scan2_angle_max',  math.pi)
+
+        self.scan1_angle_min = self.get_parameter('scan1_angle_min').value
+        self.scan1_angle_max = self.get_parameter('scan1_angle_max').value
+        self.scan2_angle_min = self.get_parameter('scan2_angle_min').value
+        self.scan2_angle_max = self.get_parameter('scan2_angle_max').value
+
+
         # Get parameters - Lấy giá trị tham số
         self.scan1_topic = self.get_parameter('scan1_topic').value
         self.scan2_topic = self.get_parameter('scan2_topic').value
@@ -250,7 +265,7 @@ class LaserScanMerger(Node):
             transform1 = self.tf_buffer.lookup_transform(
                 self.target_frame,              # Target: base_link
                 self.scan1.header.frame_id,     # Source: lidar1_link
-                Time(),                          # Thời gian: Latest (mới nhất)
+                self.scan1.header.stamp,                           # Thời gian: Latest (mới nhất)
                 Duration(seconds=0.1)            # Timeout: 0.1s
             )
             
@@ -258,7 +273,7 @@ class LaserScanMerger(Node):
             transform2 = self.tf_buffer.lookup_transform(
                 self.target_frame,
                 self.scan2.header.frame_id,     # Source: lidar2_link
-                Time(),
+                self.scan2.header.stamp, 
                 Duration(seconds=0.1)
             )
             
@@ -278,8 +293,20 @@ class LaserScanMerger(Node):
         # ====================================================================
         # Chuyển từ polar (r, θ) trong lidar_frame → Cartesian (x, y) trong base_link
         # scan_to_points() trả về list các điểm: [(x, y), intensity]
-        points1 = self.scan_to_points(self.scan1, transform1)
-        points2 = self.scan_to_points(self.scan2, transform2)
+        points1 = self.scan_to_points(
+            self.scan1,
+            transform1,
+            self.scan1_angle_min,
+            self.scan1_angle_max
+        )
+
+        points2 = self.scan_to_points(
+            self.scan2,
+            transform2,
+            self.scan2_angle_min,
+            self.scan2_angle_max
+        )
+
         
         # ====================================================================
         # STEP 5: INITIALIZE MERGED ARRAYS - Khởi tạo mảng merge
@@ -376,7 +403,8 @@ class LaserScanMerger(Node):
             # Log mỗi 100 lần merge (mỗi 5 giây nếu 20Hz)
             self.get_logger().debug(f'✅ Merged {self.merge_count} scans')
     
-    def scan_to_points(self, scan, transform):
+    def scan_to_points(self, scan, transform, angle_min_filter, angle_max_filter):
+
         """
         Chuyển laser scan từ tọa độ cực (polar) sang Cartesian và transform sang target frame.
         
@@ -433,6 +461,21 @@ class LaserScanMerger(Node):
             # Công thức: θ_i = angle_min + i × angle_increment
             angle = scan.angle_min + i * scan.angle_increment
             
+            # ================================================================
+            # LIDAR ANGLE FILTER (theo frame LiDAR, KHÔNG phải base_link)
+            # ================================================================
+            # Normalize angle về [-pi, pi]
+            while angle > math.pi:
+                angle -= 2 * math.pi
+            while angle < -math.pi:
+                angle += 2 * math.pi
+
+            # Bỏ điểm nếu ngoài sector cho phép của LiDAR
+            if angle < angle_min_filter or angle > angle_max_filter:
+                points.append((None, 0))
+                continue
+
+
             # ================================================================
             # STEP 3: POLAR TO CARTESIAN - Chuyển tọa độ cực sang Cartesian
             # ================================================================

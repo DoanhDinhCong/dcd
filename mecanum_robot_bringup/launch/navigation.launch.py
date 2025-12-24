@@ -109,11 +109,11 @@ def generate_launch_description():
     #   origin: [-10.0, -10.0, 0.0]
     #   occupied_thresh: 0.65
     #   free_thresh: 0.196
-    default_map = os.path.join(pkg_share, 'maps', 'my_map.yaml')
+    default_map = '/home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/maps/mapt8.yaml'
     
     # ✅ CẢI TIẾN: THÊM RVIZ CONFIG
     # RViz config file để tự động hiển thị robot, map, path, v.v.
-    default_rviz_config = os.path.join(pkg_share, 'config', 'navigation.rviz')
+    default_rviz_config = os.path.join(pkg_share, 'rviz', 'navigation.rviz')
     # Lưu ý: Cần tạo file này nếu chưa có!
     
     # =========================================================================
@@ -187,7 +187,7 @@ def generate_launch_description():
             'use_sim_time': use_sim_time,
             
             # ✅ CẢI TIẾN: CÓ THỂ THÊM CÁC ARGUMENTS KHÁC
-            # 'autostart': 'True',  # Tự động start lifecycle nodes
+            'autostart': 'True',  # Tự động start lifecycle nodes
             # 'use_composition': 'False',  # Dùng composition hay không
             # 'use_respawn': 'False',  # Respawn nodes nếu crash
         }.items()

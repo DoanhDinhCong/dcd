@@ -1,0 +1,239 @@
+# =============================================================================
+# ROBOT_LOCALIZATION CONFIG - FUSE IMU + ODOMETRY
+# =============================================================================
+# MỤC ĐÍCH:
+# - Kết hợp dữ liệu từ encoder (odometry) và IMU (gyroscope) 
+# - Sử dụng Extended Kalman Filter (EKF) để ước lượng vị trí chính xác
+# - Giảm drift của odometry từ bánh mecanum trượt
+#
+# CÁCH HOẠT ĐỘNG:
+# Input 1: /odom từ mecanum_odom_real.py (vx, vy, wz từ encoder)
+# Input 2: /imu/data từ hwt901b_driver.py (gyro wz từ IMU)
+# Output: /odometry/filtered (odometry đã được làm mịn)
+#
+# GIẢI THÍCH CÁC THAM SỐ:
+# - true = sử dụng data này
+# - false = bỏ qua data này
+# 
+# [x, y, z,           # vị trí
+#  roll, pitch, yaw,   # góc quay
+#  vx, vy, vz,         # vận tốc tuyến tính
+#  vroll, vpitch, vyaw,# vận tốc góc
+#  ax, ay, az]         # gia tốc
+# =============================================================================
+
+
+
+### ekf_node ros parameters
+
+ekf_node:
+  ros__parameters:
+    # ==========================================================================
+    # FREQUENCY & MODE
+    # ==========================================================================
+  
+    frequency: 50.0  # Tần số update EKF (Hz) - khớp với rate của velocity_bridge
+    sensor_timeout: 0.1  # Timeout nếu sensor không gửi data (giây)
+    two_d_mode: true  # Robot mecanum chỉ di chuyển trên mặt phẳng 2D
+    odometry_output_topic: /odometry/filtered
+    
+    # ==========================================================================
+    # TF FRAMES
+    # ==========================================================================
+    # QUAN TRỌNG: Phải khớp với các frame trong TF tree của bạn!
+    map_frame: map              # Frame bản đồ (từ SLAM)
+    odom_frame: odom            # Frame odometry
+    base_link_frame: base_link  # Frame robot 
+    world_frame: /odom         # Frame world - dùng odom cho odometry, map cho localization
+    
+    # ==========================================================================
+    # TF PUBLISH
+    # ==========================================================================
+    # Chỉ publish odom→base_link transform
+    # (map→odom do SLAM publish)
+    publish_tf: true
+    publish_acceleration: false  # Không cần publish gia tốc
+    
+    # ==========================================================================
+    # INPUT 1: ODOMETRY TỪ ENCODER
+    # ==========================================================================
+    # Topic: /odom từ mecanum_odom_real.py
+    # Chứa: vị trí (x,y,yaw) và vận tốc (vx,vy,wz) từ encoder bánh xe
+    #
+    # ✅ DÙNG GÌ:
+    # - vx, vy (vận tốc X,Y) - TỪ ENCODER
+    # - wz (vận tốc góc Z) - TỪ ENCODER (nhưng không chính xác do trượt)
+    #
+    # ❌ KHÔNG DÙNG:
+    # - x, y, yaw (vị trí) - để EKF tự tính từ vận tốc
+    # - Gia tốc - encoder không có
+    # ==========================================================================
+    odom0: /odom
+    odom0_config: [false, false, false,      # x, y, z position - EKF tự tính
+                   false, false, false,    # roll, pitch, yaw - EKF tự tính  
+                   true,  true,  false,    # ✅ vx, vy velocity - DÙNG TỪ ENCODER
+                   false, false, false,     # ✅ wz angular velocity - DÙNG TỪ ENCODER (backup)
+                   false, false, false]    # ax, ay, az acceleration - không có
+    
+    # Covariance override (tùy chọn)
+    # Nếu muốn điều chỉnh độ tin cậy của odometry:
+    # odom0_pose_covariance: [1e-3, 0, 0, 0, 0, 0,
+    #                         0, 1e-3, 0, 0, 0, 0,
+    #                         0, 0, 1e6, 0, 0, 0,
+    #                         0, 0, 0, 1e6, 0, 0,
+    #                         0, 0, 0, 0, 1e6, 0,
+    #                         0, 0, 0, 0, 0, 1e-3]
+    
+    # Differential mode: Chỉ quan tâm THAY ĐỔI vận tốc, không quan tâm giá trị tuyệt đối
+    odom0_differential: false  # false = dùng giá trị tuyệt đối (absolute)
+    
+    # Relative mode
+    odom0_relative: false
+    
+    # Queue size
+    odom0_queue_size: 10
+    
+    # ==========================================================================
+    # INPUT 2: IMU DATA
+    # ==========================================================================
+    # Topic: /imu/data từ hwt901b_driver.py
+    # Chứa: angular_velocity (gyro), linear_acceleration, orientation (angle)
+    #
+    # ✅ DÙNG GÌ:
+    # - yaw (góc quay) - TỪ IMU ANGLE (chính xác hơn encoder!)
+    # - wz (vận tốc góc) - TỪ IMU GYRO (chính xác hơn encoder!)
+    # - ax (gia tốc X) - Bổ sung thông tin động học
+    #
+    # ❌ KHÔNG DÙNG:
+    # - x, y position - IMU không có
+    # - vx, vy velocity - IMU không đo được (cần tích phân gia tốc → nhiễu)
+    # - roll, pitch - Robot 2D không cần
+    # ==========================================================================
+    imu0: /imu/data
+    imu0_config: [false, false, false,     # x, y, z position - IMU không có
+                  false, false, false,     #  yaw orientation - DÙNG TỪ IMU ANGLE
+                  false, false, false,     # vx, vy, vz velocity - IMU không đo
+                  false, false, true,      # ✅ wz angular velocity - DÙNG TỪ IMU GYRO (QUAN TRỌNG!)
+                  true,  false, false]     # ✅ ax acceleration X - bổ sung thông tin
+    
+    # Differential mode cho IMU
+    # true = Chỉ dùng THAY ĐỔI orientation (tốt cho yaw drift)
+    imu0_differential: false
+    
+    # Relative mode
+    imu0_relative: false
+    
+    # Remove gravitational acceleration
+    # true nếu IMU của bạn ĐÃ TRỪ TRỌNG LỰC (HWT901B đã trừ sẵn)
+    imu0_remove_gravitational_acceleration: true
+    
+    # Queue size
+    imu0_queue_size: 10
+    
+ # Covariance IMU - Tin gyro nhiều hơn
+    imu0_angular_velocity_covariance: [1e6, 0.0,  0.0,
+                                       0.0,  1e6, 0.0,
+                                       0.0,  0.0,  0.01]  # ✅ wz tin cậy cao
+    
+    imu0_linear_acceleration_covariance: [0.1, 0.0,  0.0,
+                                          0.0,  1e6, 0.0,
+                                          0.0,  0.0,  1e6]  # ✅ ax khá tin cậy
+
+    # ==========================================================================
+    # PROCESS NOISE COVARIANCE
+    # ==========================================================================
+    # Ma trận covariance cho process noise (nhiễu của model)
+    # Giá trị càng lớn → EKF càng "linh hoạt" theo sensor mới
+    # Giá trị càng nhỏ → EKF càng "cứng" theo model dự đoán
+    #
+    # HƯỚNG DẪN ĐIỀU CHỈNH:
+    # - Nếu odometry filtered "lag" so với thực tế → TĂNG các giá trị
+    # - Nếu odometry filtered "giật" nhiều → GIẢM các giá trị
+    # - Với mecanum wheel (nhiễu cao) → dùng giá trị vừa phải
+    # ==========================================================================
+    process_noise_covariance: [0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015]
+    
+    # ==========================================================================
+    # INITIAL COVARIANCE
+    # ==========================================================================
+    # Độ không chắc chắn ban đầu của trạng thái
+    # Giá trị lớn = EKF sẽ nhanh chóng tin sensor hơn dự đoán ban đầu
+    # ==========================================================================
+    initial_estimate_covariance: [1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9]
+
+# =============================================================================
+# TÓM TẮT CÁCH HOẠT ĐỘNG:
+# =============================================================================
+# 1. Encoder (odom) cung cấp: vx, vy, wz
+#    → Chính xác cho vx, vy
+#    → KHÔNG CHÍNH XÁC cho wz (do trượt)
+#
+# 2. IMU cung cấp: yaw (góc), wz (gyro), ax (gia tốc)
+#    → RẤT CHÍNH XÁC cho wz (gyro)
+#    → Giúp sửa yaw drift từ encoder
+#
+# 3. EKF kết hợp:
+#    → vx, vy từ encoder (tin cậy)
+#    → wz từ IMU gyro (chính xác hơn encoder)
+#    → yaw từ IMU angle
+#    → ax từ IMU (bổ sung)
+#
+# 4. Output: /odometry/filtered
+#    → Odometry đã được làm mịn, giảm drift
+#    → SLAM sẽ dùng topic này thay vì /odom
+# =============================================================================
+
+# =============================================================================
+# HƯỚNG DẪN ĐIỀU CHỈNH:
+# =============================================================================
+# 
+# TEST 1: Kiểm tra drift góc
+# 1. Đặt robot tại điểm A, hướng về phía Bắc
+# 2. Cho robot quay tròn 10 vòng
+# 3. So sánh:
+#    - /odom (chỉ encoder): có thể lệch 10-20 độ
+#    - /odometry/filtered (có IMU): lệch < 5 độ
+#
+# TEST 2: Kiểm tra drift vị trí
+# 1. Cho robot đi thẳng 10m, quay lại
+# 2. So sánh sai số:
+#    - /odom: 30-50cm
+#    - /odometry/filtered: 10-20cm (giảm 50-70%)
+#
+# ĐIỀU CHỈNH NẾU CẦN:
+# - Nếu filtered vẫn drift nhiều:
+#   → Tăng trọng số IMU: Tăng imu0_angular_velocity_covariance
+#   → Giảm trọng số odom: Tăng odom0_twist_covariance
+#
+# - Nếu filtered "giật" hoặc lag:
+#   → Giảm process_noise_covariance
+#   → Tăng sensor_timeout
+# =============================================================================

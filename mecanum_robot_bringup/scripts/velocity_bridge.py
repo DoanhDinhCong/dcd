@@ -38,7 +38,6 @@ THÔNG SỐ QUAN TRỌNG:
 1. MAJOR #8: Watchdog spam serial - Chỉ gửi zero MỘT LẦN khi timeout
 2. CRITICAL: js.n → js.name (lỗi thuộc tính JointState message)
 
-
 """
 
 import time
@@ -245,19 +244,7 @@ class VelocityBridgeVfmt(Node):
         self.invert = [bool(x) for x in self.get_parameter('invert_wheels').value]
 
         # =====================================================================
-        # ✅ SỬA LỖI MAJOR #8: CỜ CHỐNG SPAM ZERO
-        # =====================================================================
-        # LỖI CŨ: Gửi "V 0 0 0" liên tục mỗi 20ms khi timeout
-        #         → Serial buffer STM32 bị tràn, robot lag
-        # 
-        # SỬA: Dùng flag để chỉ gửi zero MỘT LẦN khi timeout
-        #      Sau đó không gửi gì nữa cho đến khi có cmd mới
-        # 
-        # Workflow:
-        #   1. Nhận cmd_vel → reset flag → gửi bình thường
-        #   2. Timeout → gửi zero MỘT LẦN → set flag
-        #   3. Vẫn timeout → không gửi gì (flag = True)
-        #   4. Nhận cmd_vel mới → reset flag → quay lại bước 1
+        
         # =====================================================================
         self._already_sent_zero = False  # Flag: Đã gửi zero chưa?
         
@@ -357,7 +344,7 @@ class VelocityBridgeVfmt(Node):
         # Timestamp (ms) của lần đọc encoder trước
         # Dùng để tính dt (delta time) cho velocity
         self._last_ms = None
-        
+        self._last_T = None
         # =====================================================================
         # LOG THÔNG TIN KHỞI ĐỘNG
         # =====================================================================
@@ -711,9 +698,6 @@ class VelocityBridgeVfmt(Node):
                     d = [int(m.group(i)) for i in range(6, 10)]
                     # d = [D_FL, D_FR, D_RR, D_RL]
                     
-                    
-
-
                     # ========================================================
                     # BƯỚC 5: PUBLISH DỮ LIỆU THÔ (DEBUG)
                     # ========================================================
@@ -732,23 +716,26 @@ class VelocityBridgeVfmt(Node):
                     pos = [t * self.rad_per_tick for t in T]
                     # pos = [pos_FL, pos_FR, pos_RR, pos_RL] (rad)
                     
-                    # ------ Velocity từ delta ticks ------
-                    if self._last_ms is not None:
+                    # ------ Velocity từ DELTA T (chênh lệch total ticks) ------
+                    # ✅ SỬA: Dùng Delta T thay vì giá trị D từ STM32
+                    if self._last_ms is not None and hasattr(self, '_last_T'):
                         # Tính delta time (s)
                         dt = (ms - self._last_ms) / 1000.0
                         
                         # Kiểm tra dt hợp lệ (0 < dt < 0.5s)
-                        # dt < 0: Timestamp bị lỗi hoặc STM32 reset
-                        # dt > 0.5s: Quá lâu, có thể bị đứng
                         if 0.0 < dt < 0.5:
-                            # Công thức: velocity = (delta_ticks / dt) × (2π / tpr)
-                            vel = [di * self.rad_per_tick / dt for di in d]
+                            # ✅ TÍNH DELTA T: Chênh lệch total ticks giữa 2 lần đo
+                            delta_T = [T[i] - self._last_T[i] for i in range(4)]
+                            
+                            # Công thức: velocity = (delta_T / dt) × (2π / tpr)
+                            vel = [dT * self.rad_per_tick / dt for dT in delta_T]
                         else:
-                            # dt không hợp lệ → velocity = 0
                             vel = [0.0] * 4
                     else:
-                        # Lần đầu tiên → chưa có dt
                         vel = [0.0] * 4
+
+                    # Lưu total ticks hiện tại cho lần tính sau
+                    self._last_T = T
                     
                     # Cập nhật timestamp cho lần sau
                     self._last_ms = ms

@@ -134,36 +134,36 @@ Visualization Manager:
     - Alpha: 1.0                 # Độ đục: 100%
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 10
-        Min Value: -10
+        Max Value: 12            # Khoảng cách tối đa hiển thị: 10m
+        Min Value: 0             # Khoảng cách tối thiểu: 0m
         Value: true
       Axis: Z
-      Channel Name: intensity
+      Channel Name: x
       Class: rviz_default_plugins/LaserScan
-      Color: 255; 0; 0         # Màu đỏ (RGB) - dễ nhìn trên map
-      Color Transformer: FlatColor
-      Decay Time: 0            # Không fade (giữ mãi)
-      Enabled: true            # Bật hiển thị
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 0
-      Min Color: 0; 0; 0
-      Min Intensity: 0
+      Color: 255; 0; 0           # Màu này sẽ bị override bởi rainbow
+      Color Transformer: Intensity  # Đổi sang Intensity để dùng rainbow
+      Decay Time: 0              # Không fade (giữ mãi)
+      Enabled: true              # Bật hiển thị
+      Invert Rainbow: false      # Không đảo ngược màu (đỏ=gần, tím=xa)
+      Max Color: 255; 255; 255   # Màu trắng (xa nhất)
+      Max Intensity: 12          # Cường độ tối đa (khoảng cách xa nhất)
+      Min Color: 0; 0; 0         # Màu đen (gần nhất)
+      Min Intensity: 0           # Cường độ tối thiểu (khoảng cách gần nhất)
       Name: LaserScan
       Position Transformer: XYZ
       Selectable: true
-      Size (Pixels): 3         # Kích thước điểm: 3 pixels
-      Size (m): 0.05           # Kích thước điểm: 5cm
-      Style: Points            # Kiểu hiển thị: điểm
+      Size (Pixels): 3           # Kích thước điểm: 3 pixels
+      Size (m): 0.05             # Kích thước điểm: 5cm
+      Style: Points              # Kiểu hiển thị: điểm
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
-        Value: /scan_merged    # Topic LaserScan (hoặc /scan nếu dùng 1 lidar)
+        Value: /scan_merged      # Topic LaserScan
       Use Fixed Frame: true
-      Use rainbow: true        # Dùng màu rainbow theo khoảng cách
+      Use rainbow: true          # BẬT rainbow - hiển thị 7 màu cầu vồng
       Value: true
       
     # ========================================================================
@@ -174,7 +174,17 @@ Visualization Manager:
       Frame Timeout: 15        # Timeout nếu frame không update trong 15s
       Frames:
         All Enabled: true      # Hiển thị tất cả frames
-      Marker Scale: 0.3        # Kích thước mũi tên TF: 30cm
+        de_lidar1_link:
+          Enabled: false       # TẮT frame de_lidar1_link
+          Value: false
+        de_lidar2_link:
+          Enabled: false       # TẮT frame de_lidar2_link
+          Value: false
+        front_marker:
+          Enabled: false       # TẮT frame 
+          Value: false
+
+      Marker Scale: 0.75        # Kích thước mũi tên TF: 30cm
       Name: TF
       Show Arrows: true        # Hiển thị mũi tên (chỉ hướng)
       Show Axes: true          # Hiển thị trục XYZ
@@ -204,7 +214,7 @@ Visualization Manager:
           Scale: 1
           Value: true          # Hiển thị covariance vị trí
         Value: true
-      Enabled: true            # Bật hiển thị odometry
+      Enabled: false            # Bật hiển thị odometry
       Keep: 100                # Giữ lại 100 poses gần nhất
       Name: Odometry
       Position Tolerance: 0.1  # Tolerance vị trí để vẽ pose mới: 10cm

@@ -33,13 +33,13 @@ from launch_ros.actions import Node
 def generate_launch_description():
     """
     Tạo launch description chứa 3 nodes:
-    1. lidar1_node: RPLidar thứ nhất (góc trước-trái)
-    2. lidar2_node: RPLidar thứ hai (góc sau-phải)
+    1. lidar1_node: RPLidar thứ nhất (góc trước-phải)
+    2. lidar2_node: RPLidar thứ hai (góc sau-trái)
     3. laser_merger: Node merge 2 scan thành 1
     """
     
     # ==========================================================================
-    # LIDAR 1 NODE - RPLidar A1M8 góc trước-trái (xoay 180° trong URDF)
+    # LIDAR 1 NODE - RPLidar A1M8 góc trước-phải (xoay 180° trong URDF)
     # ==========================================================================
     lidar1_node = Node(
         package='rplidar_ros',           # Package ROS2 driver cho RPLidar
@@ -70,8 +70,8 @@ def generate_launch_description():
                                                  # 'Boost': Cao hơn (A2/A3)
             
             # Giới hạn góc quét (90-360°)
-             'angle_min': 1.5709,                # 90° (rad) 
-             'angle_max': 6.28318,              # 360° (rad) 
+             'angle_min': 1.5708,                # 90° (rad) 
+             'angle_max': -3.14159,              # 360° (rad) 
             
             # Range limits
              'range_min': 0.15,                 # Khoảng cách tối thiểu (m)
@@ -87,7 +87,7 @@ def generate_launch_description():
     )
     
     # ==========================================================================
-    # LIDAR 2 NODE - RPLidar A1M8 góc sau-phải (Không xoay URDF)
+    # LIDAR 2 NODE - RPLidar A1M8 góc sau-trái (Không xoay URDF)
     # ==========================================================================
     lidar2_node = Node(
         package='rplidar_ros',
@@ -102,11 +102,11 @@ def generate_launch_description():
             'serial_baudrate': 115200,           # Baudrate giống LiDAR 1
             'frame_id': 'lidar2_link',           # TF frame khác với LiDAR 1
             'angle_compensate': True,
-            'scan_mode': 'Standard',
+            'scan_mode': 'Sensitivity',
             
             # Giới hạn góc quét (90-360°)
-             'angle_min': 1.5709,
-             'angle_max': 6.28318,
+             'angle_min': 1.5708,
+             'angle_max': -3.14159,
              
             # Range limits
              'range_min': 0.15,                 # Khoảng cách tối thiểu (m)
@@ -123,6 +123,8 @@ def generate_launch_description():
     # ==========================================================================
     # LASER SCAN MERGER NODE - Merge 2 scan thành 1 scan 360°
     # ==========================================================================
+    # ⚠️ Node này là CUSTOM Python script trong package của bạn!
+    # ⚠️ Phải đảm bảo file laser_scan_merger.py tồn tại và executable
     
     laser_merger = Node(
         package='mecanum_robot_bringup',         # Package chứa script merger

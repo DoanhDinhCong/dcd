@@ -100,23 +100,10 @@ def generate_launch_description():
     5. Launch RViz2 với config
     """
     
-    # =========================================================================
-    # TÌM ĐƯỜNG DẪN PACKAGE
-    # =========================================================================
-    
-    # Đường dẫn tới package mecanum_robot_bringup
     pkg_share = get_package_share_directory('mecanum_robot_bringup')
     
-    # =========================================================================
-    # ĐƯỜNG DẪN CONFIG FILES
-    # =========================================================================
-    
-    # File cấu hình SLAM Toolbox
-    # Chứa parameters: resolution, scan topic, loop closure, v.v.
     slam_params_file = os.path.join(pkg_share, 'config', 'slam_toolbox_params.yaml')
     
-    # ✅ CẢI TIẾN: THÊM RVIZ CONFIG
-    # RViz config cho SLAM: hiển thị Map, LaserScan, TF, Pose Graph
     default_rviz_config = os.path.join(pkg_share, 'rviz', 'slam.rviz')
     
     # =========================================================================
@@ -128,9 +115,6 @@ def generate_launch_description():
     slam_params = LaunchConfiguration('slam_params_file')
     rviz_config = LaunchConfiguration('rviz_config')
     
-    # Declare argument: use simulation time
-    # False: Robot thật (dùng wall time)
-    # True: Gazebo simulation (dùng /clock)
     declare_use_sim_time_arg = DeclareLaunchArgument(
         'use_sim_time',
         default_value='False',
@@ -156,71 +140,29 @@ def generate_launch_description():
     # SLAM TOOLBOX NODE
     # =========================================================================
     
-    # SLAM Toolbox sử dụng thuật toán graph-based SLAM:
-    # - Tạo pose graph (đồ thị các vị trí robot)
-    # - Loop closure detection (phát hiện khi quay lại vị trí cũ)
-    # - Graph optimization (tối ưu bản đồ)
-    # 
-    # Có 3 modes:
-    # - async_slam_toolbox_node: Online mapping (real-time)
-    # - sync_slam_toolbox_node: Offline mapping (từ bag file)
-    # - localization_slam_toolbox_node: Chỉ localization (không update map)
     slam_toolbox = Node(
         package='slam_toolbox',
-        
-        # ✅ async_slam_toolbox_node: Online SLAM mode
-        # Tạo bản đồ real-time khi robot di chuyển
-        # Phù hợp cho: Khám phá môi trường mới, tạo map lần đầu
         executable='async_slam_toolbox_node',
         
         name='slam_toolbox',
-        
-        # Parameters
         parameters=[
             slam_params,  # Load từ YAML file
-            
-            # ✅ CẢI TIẾN: THÊM use_sim_time
-            # QUAN TRỌNG: Phải khớp với robot_bringup
-            # False: Dùng cho robot thật
-            # True: Dùng cho Gazebo
             {'use_sim_time': use_sim_time}
         ],
         
         output='screen',
         
-        # ✅ CẢI TIẾN TÙY CHỌN: Remapping topics
-        # Nếu topic scan không phải /scan mà là /scan_merged
-        # remappings=[
-        #     ('/scan', '/scan_merged'),
-        # ]
     )
     
     # =========================================================================
     # RVIZ2 NODE - Visualization
     # =========================================================================
-    
-    # RViz2 để visualize:
-    # - Map đang được tạo (/map)
-    # - LaserScan real-time (/scan)
-    # - TF tree (map→odom→base_link→laser)
-    # - Pose graph của SLAM
-    # - Trajectory của robot
     rviz = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='screen',
-           
-        # ✅ CẢI TIẾN: THÊM CONFIG FILE
-        # Config hiển thị:
-        # - Map (topic: /map)
-        # - LaserScan (topic: /scan_merged)
-        # - TF (tất cả frames)
-        # - Path (trajectory)
-        # - Pose Graph (SLAM graph)
         arguments=['-d', rviz_config],
-        
-        # Parameters
         parameters=[{
             'use_sim_time': use_sim_time
         }],
@@ -229,25 +171,6 @@ def generate_launch_description():
         # - Tạo mới: Mở RViz → Add displays → Save Config
         # - Hoặc bỏ argument '-d' để dùng default
     )
-    
-    # =========================================================================
-    # ✅ CẢI TIẾN TÙY CHỌN: MAP SAVER SERVICE
-    # =========================================================================
-    # Node này cung cấp service để lưu map
-    # Gọi service: ros2 service call /slam_toolbox/save_map ...
-    
-    # map_saver = Node(
-    #     package='nav2_map_server',
-    #     executable='map_saver_server',
-    #     name='map_saver',
-    #     parameters=[{
-    #         'use_sim_time': use_sim_time,
-    #         'save_map_timeout': 5000,
-    #         'free_thresh_default': 0.25,
-    #         'occupied_thresh_default': 0.65
-    #     }],
-    #     output='screen'
-    # )
     
     # =========================================================================
     # RETURN LAUNCH DESCRIPTION
@@ -265,8 +188,6 @@ def generate_launch_description():
         # Visualization
         rviz,
         
-        # ✅ Có thể thêm map_saver nếu cần
-        # map_saver,
     ])
 
 
