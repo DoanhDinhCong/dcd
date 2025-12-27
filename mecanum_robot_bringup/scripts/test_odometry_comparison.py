@@ -66,7 +66,7 @@ class OdometryComparisonTest(Node):
         self.filtered_current = msg
         
         # Lưu vị trí ban đầu khi bắt đầu test
-        if self.testing and self.filtered_staSrt is None:
+        if self.testing and self.filtered_start is None:
             self.filtered_start = msg
             self.get_logger().info('📍 Recorded /odometry/filtered start position')
     

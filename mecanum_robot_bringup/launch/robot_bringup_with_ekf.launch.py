@@ -11,12 +11,6 @@ def generate_launch_description():
     ============================================================================
     ROBOT BRINGUP LAUNCH - ĐÃ THÊM ROBOT_LOCALIZATION
     ============================================================================
-    
-    THAY ĐỔI SO VỚI BẢN CŨ:
-    ✅ Đã thêm robot_localization node để fuse IMU + Odometry
-    ✅ Đã sửa baudrate IMU: 115200 → 9600
-    ✅ Đã thêm invert_wheels cho mecanum_odom
-    
     LUỒNG DỮ LIỆU:
     1. STM32 → velocity_bridge → /joint_states
     2. /joint_states → mecanum_odom → /odom (encoder only)
@@ -24,8 +18,6 @@ def generate_launch_description():
     4. /odom + /imu/data → robot_localization → /odometry/filtered ✨
     5. SLAM/Nav2 sẽ dùng /odometry/filtered (chính xác hơn /odom)
     ============================================================================
-
-
     """
     
     pkg_share = get_package_share_directory('mecanum_robot_bringup')
@@ -75,7 +67,6 @@ def generate_launch_description():
             'echo_tx': False,
             'echo_rx': False,
             'ticks_per_rev': 6864.0,
-            #'ticks_per_rev': 8112.0,
             'wheel_joint_names': ['wheel_fl_joint', 'wheel_fr_joint', 'wheel_rr_joint', 'wheel_rl_joint'],
             'invert_wheels': [True, True, True, True]
         }],
@@ -84,8 +75,6 @@ def generate_launch_description():
     
     # ==========================================================================
     # MECANUM ODOMETRY - Tính odometry từ encoder
-    # ==========================================================================
-    # ✅ ĐÃ THÊM: invert_wheels parameter
     # ==========================================================================
     mecanum_odom = Node(
         package='mecanum_robot_bringup',
@@ -96,15 +85,13 @@ def generate_launch_description():
             'wheel_base_width': 0.47,
             'wheel_base_length': 0.48,
             'publish_tf': True,
-            'invert_wheels': [True, True, True, True],  # ✅ ĐÃ THÊM
+            'invert_wheels': [True, True, True, True],  
         }],
         output='screen'
     )
     
     # ==========================================================================
     # IMU DRIVER - HWT901B
-    # ==========================================================================
-    # ✅ ĐÃ SỬA: baudrate 115200 → 9600 (chuẩn HWT901B)
     # ==========================================================================
     imu_driver = Node(
         package='mecanum_robot_bringup',
@@ -154,7 +141,7 @@ def generate_launch_description():
         package='robot_localization',
         executable='ekf_node',
         name='ekf_filter_node',
-        parameters=[os.path.join(pkg_share, 'config', 'robot_localization.yaml')],
+        parameters=['/home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/config/robot_localization.yaml'],
         output='screen',
         remappings=[
             #('/odometry/filtered', '/odom')

@@ -116,7 +116,7 @@ Visualization Manager:
     # TF - Transform tree (tắt mặc định để giảm tải)
     # ========================================================================
     - Class: rviz_default_plugins/TF
-      Enabled: false           # Tắt (bật nếu cần debug TF)
+      Enabled: true           # Tắt (bật nếu cần debug TF)
       Name: TF
       Show Axes: true
       Value: false
@@ -194,23 +194,7 @@ Visualization Manager:
         Value: /goal_pose
       Value: true
       
-    # ========================================================================
-    # AMCL POSE - Vị trí robot từ AMCL (màu xanh lá)
-    # ========================================================================
-    - Alpha: 1.0
-      Class: rviz_default_plugins/PoseWithCovariance
-      Color: 0; 255; 0         # Màu xanh lá
-      Covariance:
-        Position:
-          Alpha: 0.3           # Hiển thị covariance nhẹ
-          Value: true
-        Value: true
-      Enabled: true
-      Name: AmclPose
-      Topic:
-        Value: /amcl_pose
-      Value: true
-      
+    
     # ========================================================================
     # PARTICLE CLOUD - Các particles AMCL (localization)
     # ========================================================================

@@ -156,16 +156,6 @@ def generate_launch_description():
     # NAV2 BRINGUP - Include launch file của Nav2 stack
     # =========================================================================
     
-    # Include launch file bringup_launch.py từ nav2_bringup package
-    # File này khởi động tất cả các nodes trong Nav2 stack:
-    # - map_server: Serve bản đồ
-    # - amcl: Localization (định vị)
-    # - planner_server: Global path planning
-    # - controller_server: Local trajectory control
-    # - bt_navigator: Behavior tree coordinator
-    # - waypoint_follower: Follow waypoints
-    # - velocity_smoother: Làm mượt cmd_vel
-    # - lifecycle_manager: Quản lý lifecycle các nodes
     nav2_bringup = IncludeLaunchDescription(
         # Tìm file launch
         PythonLaunchDescriptionSource(

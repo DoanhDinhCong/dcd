@@ -4,26 +4,6 @@ dual_lidar_merge.launch.py
 ==========================
 Launch file khởi động 2 RPLidar A1M8 và merge dữ liệu thành 1 scan duy nhất.
 
-Topology:
----------
-RPLidar1 (/dev/ttyUSB0) → /scan1 (frame: lidar1_link)
-                                      ↘
-                                       laser_scan_merger → /scan_merged (frame: base_link)
-                                      ↗
-RPLidar2 (/dev/ttyUSB1) → /scan2 (frame: lidar2_link)
-
-TF Requirements:
-----------------
-base_link → lidar1_link (từ URDF)
-base_link → lidar2_link (từ URDF)
-
-Topics Published:
------------------
-- /scan1: sensor_msgs/LaserScan từ LiDAR 1
-- /scan2: sensor_msgs/LaserScan từ LiDAR 2
-- /scan_merged: sensor_msgs/LaserScan đã merge (360°)
-
-
 """
 
 from launch import LaunchDescription

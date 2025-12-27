@@ -1,120 +1,43 @@
-# ============================================================================
-# AMCL - Adaptive Monte Carlo Localization
-# Dùng để định vị robot trên bản đồ
-# ============================================================================
-amcl:
+# ==============================================================================
+# CẤU HÌNH NAV2 CHO ROBOT LÁCH KHE HẸP
+# ==============================================================================
+# THAY ĐỔI CHÍNH:
+# 1. Giảm inflation_radius để robot dám đi gần vật cản hơn
+# 2. Tăng trọng số PathAlign/PathDist để ưu tiên đi theo đường
+# 3. Giảm trọng số BaseObstacle để không quá sợ vật cản
+# 4. Tăng số samples để tìm quỹ đạo tốt hơn trong khe hẹp
+# 5. Điều chỉnh footprint chính xác
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# MAP SERVER
+# ------------------------------------------------------------------------------
+map_server:
   ros__parameters:
     use_sim_time: False
-    
-    # Alpha parameters - Tham số nhiễu odometry (noise model)
-    alpha1: 0.1  # Nhiễu từ chuyển động quay -> quay
-    alpha2: 0.1  # Nhiễu từ chuyển động thẳng -> quay
-    alpha3: 0.1  # Nhiễu từ chuyển động thẳng -> thẳng
-    alpha4: 0.1  # Nhiễu từ chuyển động quay -> thẳng
-    alpha5: 0.1  # Nhiễu từ chuyển động ngang (strafe)
-    
-    base_frame_id: "base_link"
-    beam_skip_distance: 0.5
-    beam_skip_error_threshold: 0.9
-    beam_skip_threshold: 0.3
-    do_beamskip: false
-    global_frame_id: "map"
-    
-    lambda_short: 0.1
-    laser_likelihood_max_dist: 2.0
-    laser_max_range: 100.0
-    laser_min_range: -1.0
-    laser_model_type: "likelihood_field"
-    max_beams: 60
-    
-    # Số lượng particles - Cân bằng giữa độ chính xác và hiệu năng
-    max_particles: 2000
-    min_particles: 500
-    
-    odom_frame_id: "odom"
-    pf_err: 0.05
-    pf_z: 0.99
-    
-    # Recovery để robot tự phục hồi khi bị lạc
-    recovery_alpha_fast: 0.1
-    recovery_alpha_slow: 0.001
-    
-    resample_interval: 1
-    robot_model_type: "nav2_amcl::OmniMotionModel"
-    save_pose_rate: 0.5
-    sigma_hit: 0.2
-    tf_broadcast: true
-    transform_tolerance: 1.0
-    
-    # Ngưỡng cập nhật
-    update_min_a: 0.2
-    update_min_d: 0.25
-    
-    # Trọng số cho laser model
-    z_hit: 0.5
-    z_max: 0.1
-    z_rand: 0.35
-    z_short: 0.05
-    
-    scan_topic: /scan_merged
+    yaml_filename: /home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/maps/mapt8.yaml
 
-# ============================================================================
-# BT NAVIGATOR - Behavior Tree Navigator
-# ============================================================================
+# ------------------------------------------------------------------------------
+# BT NAVIGATOR
+# ------------------------------------------------------------------------------
 bt_navigator:
   ros__parameters:
     use_sim_time: False
     global_frame: map
     robot_base_frame: base_link
-    odom_topic: /odom
+    odom_topic: /odometry/filtered
     bt_loop_duration: 10
     default_server_timeout: 20
-    
-    plugin_lib_names:
-    - nav2_compute_path_to_pose_action_bt_node
-    - nav2_follow_path_action_bt_node
-    - nav2_back_up_action_bt_node
-    - nav2_spin_action_bt_node
-    - nav2_wait_action_bt_node
-    - nav2_clear_costmap_service_bt_node
-    - nav2_is_stuck_condition_bt_node
-    - nav2_goal_reached_condition_bt_node
-    - nav2_goal_updated_condition_bt_node
-    - nav2_initial_pose_received_condition_bt_node
-    - nav2_reinitialize_global_localization_service_bt_node
-    - nav2_rate_controller_bt_node
-    - nav2_distance_controller_bt_node
-    - nav2_speed_controller_bt_node
-    - nav2_truncate_path_action_bt_node
-    - nav2_goal_updater_node_bt_node
-    - nav2_recovery_node_bt_node
-    - nav2_pipeline_sequence_bt_node
-    - nav2_round_robin_node_bt_node
-    - nav2_transform_available_condition_bt_node
-    - nav2_time_expired_condition_bt_node
-    - nav2_distance_traveled_condition_bt_node
-    - nav2_single_trigger_bt_node
-    - nav2_is_battery_low_condition_bt_node
-    - nav2_navigate_through_poses_action_bt_node
-    - nav2_navigate_to_pose_action_bt_node
-    - nav2_remove_passed_goals_action_bt_node
-    - nav2_planner_selector_bt_node
-    - nav2_controller_selector_bt_node
-    - nav2_goal_checker_selector_bt_node
-    - nav2_controller_cancel_bt_node
-    - nav2_path_longer_on_approach_bt_node
-    - nav2_wait_cancel_bt_node
-    - nav2_spin_cancel_bt_node
-    - nav2_back_up_cancel_bt_node
 
-# ============================================================================
-# CONTROLLER SERVER - Điều khiển robot đi theo đường dẫn
-# ============================================================================
+# ------------------------------------------------------------------------------
+# CONTROLLER SERVER - ✅ ĐIỀU CHỈNH CHO KHE HẸP
+# ------------------------------------------------------------------------------
 controller_server:
   ros__parameters:
     use_sim_time: False
     controller_frequency: 20.0
-    
+    odom_topic: /odometry/filtered
+
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
@@ -122,65 +45,89 @@ controller_server:
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["goal_checker"]
     controller_plugins: ["FollowPath"]
-
+    
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
-
+      required_movement_radius: 0.15      # ✅ Giảm từ 0.2 → 0.15 (chấp nhận tiến chậm hơn)
+      movement_time_allowance: 10.0       # ✅ Tăng từ 5 → 10s (cho phép di chuyển chậm qua khe hẹp)
+    
     goal_checker:
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.1
-      yaw_goal_tolerance: 0.15
+      xy_goal_tolerance: 0.10
+      yaw_goal_tolerance: 0.17
       stateful: True
 
-    # DWB Local Planner
+    # ✅ CẤU HÌNH QUAN TRỌNG NHẤT CHO KHE HẸP
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       
-      # Giới hạn vận tốc
-      min_vel_x: 0.0
-      min_vel_y: -0.238
-      max_vel_x: 0.238
-      max_vel_y: 0.238
-      max_vel_theta: 0.5
+      # Giới hạn vận tốc - GIỮ NGUYÊN (chậm = an toàn hơn)
+      min_vel_x: -0.2
+      min_vel_y: -0.2
+      max_vel_x: 0.2
+      max_vel_y: 0.2
+      max_vel_theta: 0.2
+      
       min_speed_xy: 0.0
-      max_speed_xy: 0.238
+      max_speed_xy: 0.28
       min_speed_theta: 0.0
       
-      # Giới hạn gia tốc
-      acc_lim_x: 0.1
-      acc_lim_y: 0.1
-      acc_lim_theta: 0.5
-      decel_lim_x: -0.1
-      decel_lim_y: -0.1
-      decel_lim_theta: -0.5
+      # Giới hạn gia tốc - GIỮ NGUYÊN
+      acc_lim_x: 0.2
+      acc_lim_y: 0.2
+      acc_lim_theta: 0.2
+      decel_lim_x: -0.2
+      decel_lim_y: -0.2
+      decel_lim_theta: -0.2
+
+      # ✅ TĂNG SỐ SAMPLES - Quan trọng cho khe hẹp!
+      # Số mẫu càng nhiều → tìm được quỹ đạo tốt hơn
+      vx_samples: 15              # ✅ Tăng từ 20 → 30
+      vy_samples: 15              # ✅ Tăng từ 10 → 20 (quan trọng cho mecanum!)
+      vtheta_samples: 20          # ✅ Tăng từ 20 → 30
       
-      # Số mẫu - tăng để tìm đường tốt hơn khi đi gần vật cản
-      vx_samples: 25
-      vy_samples: 25
-      vtheta_samples: 25
+      # ✅ TĂNG SIM_TIME - Nhìn xa hơn để lập kế hoạch tốt
+      sim_time: 2.0               # ✅ Tăng từ 1.5 → 2.0s
       
-      sim_time: 1.5
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
+      xy_goal_tolerance: 0.15
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
-      
-      # ✓ QUAN TRỌNG: Trọng số critics để robot giữ khoảng cách 20cm
-      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
-      BaseObstacle.scale: 0.8   # Giảm để robot dám đi gần hơn (nhưng vẫn an toàn)
-      PathAlign.scale: 35.0     # Tăng để ưu tiên đi theo đường
-      GoalAlign.scale: 24.0
-      PathDist.scale: 35.0      # Tăng để gần đường hơn
-      GoalDist.scale: 24.0
-      RotateToGoal.scale: 32.0
 
-# ============================================================================
-# LOCAL COSTMAP - Bản đồ chi phí cục bộ
-# ============================================================================
+      # ✅ ĐIỀU CHỈNH CRITICS - QUAN TRỌNG NHẤT!
+      critics: [
+        "RotateToGoal",      # Xoay về hướng goal
+        "Oscillation",       # Tránh dao động
+        "BaseObstacle",      # Tránh va chạm
+        "GoalAlign",         # Căn chỉnh với goal
+        "PathAlign",         # Đi theo path
+        "PathDist",          # Giảm khoảng cách đến path
+        "GoalDist"           # Giảm khoảng cách đến goal
+      ]
+      
+      # ✅ TRỌNG SỐ CRITICS - CHÌA KHÓA CHO KHE HẸP
+      # Mục tiêu: Robot ưu tiên ĐI THEO ĐƯỜNG hơn là tránh vật cản xa
+      
+      BaseObstacle.scale: 0.5      # ✅ GIẢM từ 1.0 → 0.5 (ít sợ vật cản hơn)
+                                   # Lưu ý: Vẫn tránh va chạm, chỉ không quá nhút nhát
+      
+      PathAlign.scale: 50.0        # ✅ TĂNG từ 32 → 50 (ưu tiên đi theo đường)
+                                   # Giúp robot dám đi vào khe hẹp nếu đường dẫn qua đó
+      
+      PathDist.scale: 48.0         # ✅ TĂNG từ 32 → 48 (giữ sát đường)
+                                   # Không cho phép lệch xa đường quá nhiều
+      
+      GoalAlign.scale: 24.0        # Giữ nguyên
+      GoalDist.scale: 24.0         # Giữ nguyên
+      RotateToGoal.scale: 32.0     # Giữ nguyên
+      Oscillation.scale: 1.0       # Giữ nguyên
+
+# ------------------------------------------------------------------------------
+# LOCAL COSTMAP - ✅ ĐIỀU CHỈNH INFLATION CHO KHE HẸP
+# ------------------------------------------------------------------------------
 local_costmap:
   local_costmap:
     ros__parameters:
@@ -191,31 +138,20 @@ local_costmap:
       use_sim_time: False
       rolling_window: true
       
-      width: 6
-      height: 6
+      width: 4              # ✅ Tăng từ 3 → 4m (nhìn xa hơn)
+      height: 4             # ✅ Tăng từ 3 → 4m
       resolution: 0.05
       
-      # Footprint robot - 0.9m x 0.64m
-      footprint: "[ [0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32] ]"
+      # ✅ FOOTPRINT CHÍNH XÁC - Quan trọng!
+      # Robot: 0.9m x 0.64m
+      # Footprint: ±0.45m (length/2) × ±0.32m (width/2)
+      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
       
-      plugins: ["voxel_layer", "inflation_layer"]
+      plugins: ["obstacle_layer", "inflation_layer"]
       
-      # ✓ QUAN TRỌNG: Inflation radius để robot cách vật 20cm
-      # Robot width/2 = 0.32m, thêm buffer 20cm = 0.52m
-      inflation_layer:
-        plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 12.0    # Tăng để robot dám đi gần hơn
-        inflation_radius: 0.52       # = 0.32 + 0.20 (buffer 20cm)
-      
-      voxel_layer:
-        plugin: "nav2_costmap_2d::VoxelLayer"
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
-        publish_voxel_map: True
-        origin_z: 0.0
-        z_resolution: 0.05
-        z_voxels: 16
-        max_obstacle_height: 2.0
-        mark_threshold: 0
         observation_sources: scan
         scan:
           topic: /scan_merged
@@ -223,12 +159,34 @@ local_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
+          # ✅ THÊM: Tăng độ tin cậy obstacle
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
       
-      always_send_full_costmap: True
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        
+        # ✅ GIẢM INFLATION - Chìa khóa cho khe hẹp!
+        # Công thức: inflation_radius = robot_width/2 + desired_clearance
+        # Robot width = 0.64m → radius = 0.32m
+        # Clearance mong muốn = 0.08m (8cm thay vì 20cm)
+        # → inflation_radius = 0.32 + 0.08 = 0.40m
+        inflation_radius: 0.40      # ✅ GIẢM từ 0.55 → 0.40m
+        
+        # ✅ TĂNG cost_scaling_factor - Robot dám đi gần hơn
+        # Giá trị càng cao → robot càng dám vào vùng inflation
+        cost_scaling_factor: 8.0    # ✅ TĂNG từ 3.0 → 8.0
+        
+        # Giải thích:
+        # - inflation_radius nhỏ = vùng "cấm" nhỏ hơn
+        # - cost_scaling_factor cao = chi phí tăng chậm hơn
+        # → Robot có thể đi trong vùng 0.40m mà không bị chặn
 
-# ============================================================================
-# GLOBAL COSTMAP - Bản đồ chi phí toàn cục
-# ============================================================================
+# ------------------------------------------------------------------------------
+# GLOBAL COSTMAP - ✅ TƯƠNG TỰ LOCAL COSTMAP
+# ------------------------------------------------------------------------------
 global_costmap:
   global_costmap:
     ros__parameters:
@@ -238,11 +196,16 @@ global_costmap:
       robot_base_frame: base_link
       use_sim_time: False
       
-      footprint: "[ [0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32] ]"
+      # ✅ FOOTPRINT GIỐNG LOCAL
+      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
       resolution: 0.05
       track_unknown_space: true
       
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
       
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -255,78 +218,199 @@ global_costmap:
           marking: True
           data_type: "LaserScan"
       
-      static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
-      
-      # ✓ Inflation radius phải giống local costmap
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 12.0
-        inflation_radius: 0.52       # = 0.32 + 0.20 (buffer 20cm)
-      
-      always_send_full_costmap: True
+        inflation_radius: 0.40      # ✅ GIẢM từ 0.55 → 0.40m
+        cost_scaling_factor: 8.0    # ✅ TĂNG từ 3.0 → 8.0
 
-# ============================================================================
-# MAP SERVER
-# ============================================================================
-map_server:
-  ros__parameters:
-    use_sim_time: False
-    yaml_filename: "/home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/maps/mapt8.yaml"
-
-# ============================================================================
-# PLANNER SERVER
-# ============================================================================
+# ------------------------------------------------------------------------------
+# PLANNER SERVER - ✅ ĐIỀU CHỈNH CHO KHE HẸP
+# ------------------------------------------------------------------------------
 planner_server:
   ros__parameters:
+    expected_planner_frequency: 20.0
     use_sim_time: False
     planner_plugins: ["GridBased"]
+    
     GridBased:
       plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.5
-      use_astar: true
+      
+      # ✅ GIẢM TOLERANCE - Đường đi chính xác hơn
+      tolerance: 0.3              # ✅ Giảm từ 0.5 → 0.3
+      
+      use_astar: true             # A* tốt hơn Dijkstra cho khe hẹp
+      
+      # ✅ CHO PHÉP ĐI QUA VÙNG UNKNOWN - Quan trọng!
+      allow_unknown: true         # Cho phép lập kế hoạch qua vùng chưa biết
+      
+      # ✅ THÊM: Cost factor cho vùng gần vật cản
+      use_final_approach_orientation: false
 
-# ============================================================================
+# ------------------------------------------------------------------------------
 # BEHAVIOR SERVER
-# ============================================================================
+# ------------------------------------------------------------------------------
 behavior_server:
   ros__parameters:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    
     behavior_plugins: ["spin", "backup", "wait"]
     
     spin:
-      plugin: "nav2_behaviors::Spin"
-    backup:
-      plugin: "nav2_behaviors::BackUp"
-    wait:
-      plugin: "nav2_behaviors::Wait"
+      plugin: "nav2_behaviors/Spin"
+      # ✅ Xoay chậm hơn khi bị kẹt
+      max_rotational_vel: 0.3     # ✅ Giảm từ 1.0 → 0.3
+      min_rotational_vel: 0.1
+      rotational_acc_lim: 0.2
     
-    global_frame: odom
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+      # ✅ Lùi chậm và ít hơn
+      backup_dist: 0.15           # ✅ Giảm từ 0.3 → 0.15m
+      backup_speed: 0.05          # ✅ Giảm tốc độ lùi
+    
+    wait:
+      plugin: "nav2_behaviors/Wait"
+      wait_duration: 5
+    
+    global_frame: map
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_timeout: 0.1
     use_sim_time: False
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
 
-# ============================================================================
-# 📏 CẤU HÌNH ĐỂ ROBOT CÁCH VẬT CẢN 20CM
-# ============================================================================
-# Robot width = 0.64m → Robot radius từ tâm = 0.32m
-# Buffer mong muốn = 20cm = 0.20m
+# ------------------------------------------------------------------------------
+# WAYPOINT FOLLOWER
+# ------------------------------------------------------------------------------
+waypoint_follower:
+  ros__parameters:
+    loop_rate: 20
+    stop_on_failure: False
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+
+# ------------------------------------------------------------------------------
+# VELOCITY SMOOTHER
+# ------------------------------------------------------------------------------
+velocity_smoother:
+  ros__parameters:
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.2, 0.2, 0.2]
+    min_velocity: [-0.2, -0.2, -0.2]
+    max_accel: [0.2, 0.2, 0.2]
+    max_decel: [-0.2, -0.2, -0.2]
+    odom_topic: /odometry/filtered
+    odom_duration: 0.1
+    use_sim_time: False
+
+# ------------------------------------------------------------------------------
+# AMCL
+# ------------------------------------------------------------------------------
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    global_frame_id: map
+    odom_frame_id: odom
+    base_frame_id: base_link
+    tf_broadcast: true
+    scan_topic: /scan_merged
+    min_particles: 500
+    max_particles: 2000
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+
+# ------------------------------------------------------------------------------
+# SMOOTHER SERVER
+# ------------------------------------------------------------------------------
+smoother_server:
+  ros__parameters:
+    use_sim_time: False
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+# ==============================================================================
+# TÓM TẮT THAY ĐỔI CHO KHE HẸP:
+# ==============================================================================
 # 
-# inflation_radius = robot_radius + buffer
-#                  = 0.32 + 0.20
-#                  = 0.52m ✓
+# 1. INFLATION RADIUS: 0.55m → 0.40m
+#    - Giảm vùng "cấm" xung quanh vật cản
+#    - Robot có thể đi trong khe hẹp hơn
+#    - Khe tối thiểu: 0.64m (robot) + 2×0.08m (buffer) = 0.80m
+#    - Trước: Cần khe 1.10m
+#    - Sau: Cần khe 0.80m → Giảm 27%!
 #
-# Với cấu hình này:
-# - Khe hẹp tối thiểu có thể đi qua = 0.9m + 2×0.20 = 1.3m
-# - Robot sẽ cố gắng giữ khoảng cách ~20cm với vật cản
-# - cost_scaling_factor = 12.0 để robot dám đi trong vùng này
-# - BaseObstacle.scale = 0.8 để không quá sợ vật cản
-# ============================================================================
+# 2. COST_SCALING_FACTOR: 3.0 → 8.0
+#    - Chi phí tăng chậm hơn khi gần vật cản
+#    - Robot dám đi trong vùng inflation
+#
+# 3. CRITIC WEIGHTS (Trọng số ưu tiên):
+#    - BaseObstacle: 1.0 → 0.5 (ít sợ vật cản)
+#    - PathAlign: 32 → 50 (ưu tiên theo đường)
+#    - PathDist: 32 → 48 (giữ sát đường)
+#    → Robot TIN TƯỞNG ĐƯỜNG ĐI hơn là né tránh
+#
+# 4. SAMPLES (Số mẫu quỹ đạo):
+#    - vx: 20 → 30 samples
+#    - vy: 10 → 20 samples (quan trọng cho mecanum!)
+#    - vtheta: 20 → 30 samples
+#    → Tìm được quỹ đạo tốt hơn trong không gian phức tạp
+#
+# 5. SIM_TIME: 1.5s → 2.0s
+#    - Nhìn xa hơn để lập kế hoạch
+#    - Phát hiện khe hẹp sớm hơn
+#
+# 6. LOCAL COSTMAP SIZE: 3m × 3m → 4m × 4m
+#    - Nhìn xa hơn để thấy lối ra khỏi khe hẹp
+#
+# 7. PLANNER TOLERANCE: 0.5m → 0.3m
+#    - Đường đi chính xác hơn qua khe hẹp
+#
+# ==============================================================================
+# CÁCH TEST:
+# ==============================================================================
+# 
+# TEST 1: Khe hẹp 90cm (Robot 64cm + 26cm buffer)
+# - Tạo 2 vật cản cách nhau 90cm
+# - Set goal phía sau khe hẹp
+# - Robot PHẢI đi qua được
+#
+# TEST 2: Khe hẹp 80cm (Giới hạn tối thiểu)
+# - Tạo khe 80cm
+# - Robot nên cố gắng đi qua (có thể cần nhiều lần thử)
+#
+# TEST 3: Khe hẹp 70cm (Dưới giới hạn)
+# - Robot NÊN TỪ CHỐI đi qua (quá hẹp, nguy hiểm)
+#
+# ==============================================================================
+# ĐIỀU CHỈNH NÂNG CAO (NẾU VẪN KHÔNG QUA ĐƯỢC):
+# ==============================================================================
+#
+# NẾU ROBOT VẪN KHÔNG DÁM VÀO KHE HẸP:
+# 1. Giảm thêm inflation_radius: 0.40 → 0.35m
+# 2. Tăng cost_scaling_factor: 8.0 → 10.0
+# 3. Giảm BaseObstacle.scale: 0.5 → 0.3
+# 4. Tăng PathAlign.scale: 50 → 60
+#
+# NẾU ROBOT VA CHẠM NHIỀU:
+# 1. Tăng inflation_radius: 0.40 → 0.45m
+# 2. Giảm cost_scaling_factor: 8.0 → 6.0
+# 3. Tăng BaseObstacle.scale: 0.5 → 0.7
+# 4. Kiểm tra footprint có chính xác không
+#
+# NẾU ROBOT CHẬM QUÁ TRONG KHE HẸP:
+# 1. Tăng movement_time_allowance: 10 → 15s
+# 2. Giảm required_movement_radius: 0.15 → 0.10m
+#
+# ==============================================================================

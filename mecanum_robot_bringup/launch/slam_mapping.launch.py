@@ -44,21 +44,6 @@ OUTPUT:
 - TF: map → odom transform
 - /slam_toolbox/graph: Pose graph
 
-QUY TRÌNH SỬ DỤNG:
-------------------
-1. Chạy robot_bringup (sensors + odometry)
-2. Chạy file này (SLAM)
-3. Điều khiển robot đi khắp khu vực
-4. Lưu bản đồ khi hoàn thành
-5. Dùng bản đồ đó cho navigation
-
-YÊU CẦU:
---------
-- Robot phải có LaserScan (Lidar/RPLidar)
-- Odometry phải chính xác (từ encoders)
-- TF tree đầy đủ (odom→base_link→laser_frame)
-- Robot di chuyển chậm và ổn định
-
 CÁCH SỬ DỤNG:
 -------------
 # Bước 1: Chạy robot

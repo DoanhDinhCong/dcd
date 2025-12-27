@@ -2,51 +2,6 @@
 """
 hwt901b_driver.py - Driver IMU HWT901B cho ROS2
 ================================================
-Driver đọc dữ liệu từ cảm biến IMU HWT901B (9 trục) qua Serial và publish lên ROS2.
-
-THÔNG SỐ KỸ THUẬT HWT901B:
---------------------------
-- Cảm biến: MPU9250 (6 trục) + AK8963 (3 trục từ kế)
-- Đầu ra: Gia tốc, Con quay hồi chuyển, Góc Euler, Quaternion, Từ trường
-- Giao tiếp: UART (Serial), I2C, hoặc USB
-- Tốc độ truyền mặc định: 9600 baud (có thể cấu hình lên 115200)
-- Tần số xuất dữ liệu: 0.2Hz - 200Hz (mặc định: 10Hz)
-- Phạm vi:
-  - Gia tốc kế: ±16g
-  - Con quay hồi chuyển: ±2000°/giây
-  - Góc: ±180° (Roll/Pitch), 0-360° (Yaw)
-
-GIAO THỨC TRUYỀN DỮ LIỆU:
--------------------------
-Mỗi gói tin (packet) 11 bytes:
-┌────────┬────────┬──────────────┬──────────┐
-│  0x55  │  Loại  │  Dữ liệu(8B) │ Checksum │
-│ Header │  1B    │              │   1B     │
-└────────┴────────┴──────────────┴──────────┘
-
-Mã loại (Type codes):
-- 0x50: Thời gian
-- 0x51: Gia tốc (ax, ay, az)
-- 0x52: Vận tốc góc (wx, wy, wz)
-- 0x53: Góc Euler (roll, pitch, yaw)
-- 0x54: Từ trường (mx, my, mz)
-- 0x55: Trạng thái cổng
-- 0x56: Áp suất không khí + độ cao
-- 0x57: Kinh độ + vĩ độ
-- 0x58: Vận tốc mặt đất
-- 0x59: Quaternion (q0, q1, q2, q3)
-
-DRIVER NÀY CHỈ SỬ DỤNG:
-- 0x51: Gia tốc
-- 0x52: Vận tốc góc
-- 0x53: Góc Euler
-
-LƯU Ý QUAN TRỌNG:
-- ✅ Tốc độ truyền mặc định 9600 baud (nếu chưa cấu hình IMU)
-- ⚠️ Cần cấu hình IMU lên 115200 nếu muốn tốc độ cao hơn
-- ⚠️ Cổng thường là /dev/ttyUSB2 hoặc ttyUSB1
-
-
 """
 
 import rclpy
@@ -95,27 +50,12 @@ class HWT901BDriver(Node):
         # =====================================================================
         # THAM SỐ CẤU HÌNH
         # =====================================================================
-        
-        # Cổng Serial - Cổng kết nối IMU
-        # Kiểm tra: ls -l /dev/ttyUSB*
-        # Thường là: /dev/ttyUSB0, /dev/ttyUSB1, hoặc /dev/ttyUSB2
+        # Cổng Serial kết nối với IMU
         self.declare_parameter('port', '/dev/ttyUSB2')
         
+        
         # =====================================================================
-        # TỐC ĐỘ TRUYỀN (BAUDRATE)
-        # =====================================================================
-        # ✅ ĐÃ SỬA: Vấn đề nghiêm trọng #2
-        # 
-        # HWT901B xuất xưởng mặc định: 9600 baud
-        # Để sử dụng 115200 baud cần:
-        #   1. Cài phần mềm WitMotion trên Windows
-        #   2. Kết nối IMU qua USB
-        #   3. Vào Settings → Baudrate → 115200
-        #   4. Lưu cấu hình
-        # 
-        # Nếu CHƯA cấu hình → phải dùng 9600!
-        # =====================================================================
-        self.declare_parameter('baudrate', 57600)  # ✅ Giữ 9600 (mặc định xuất xưởng)
+        self.declare_parameter('baudrate', 57600)  
         
         # Frame ID - Khung tọa độ của IMU trong cây TF
         # Phải khớp với URDF: <link name="imu_link">
