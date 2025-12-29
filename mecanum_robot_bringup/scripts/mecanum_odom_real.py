@@ -48,7 +48,7 @@ class MecanumOdometryReal(Node):
         self.declare_parameter('wheel_radius', 0.075)
         self.declare_parameter('wheel_base_width', 0.47)
         self.declare_parameter('wheel_base_length', 0.48)
-        self.declare_parameter('publish_tf', True)
+        self.declare_parameter('publish_tf', False)
         
         # =====================================================================
         # WHEEL JOINT NAMES (PHẢI GIỐNG VỚI URDF VÀ velocity_bridge.py)

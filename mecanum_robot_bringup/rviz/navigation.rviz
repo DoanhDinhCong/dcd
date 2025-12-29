@@ -116,7 +116,7 @@ Visualization Manager:
     # TF - Transform tree (tắt mặc định để giảm tải)
     # ========================================================================
     - Class: rviz_default_plugins/TF
-      Enabled: true           # Tắt (bật nếu cần debug TF)
+      Enabled: false           # Tắt (bật nếu cần debug TF)
       Name: TF
       Show Axes: true
       Value: false
@@ -214,7 +214,7 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz_default_plugins/Polygon
       Color: 0; 0; 255         # Màu xanh dương
-      Enabled: true
+      Enabled: false
       Name: LocalFootprint
       Topic:
         Value: /local_costmap/published_footprint
@@ -226,7 +226,7 @@ Visualization Manager:
     - Alpha: 1.0
       Class: rviz_default_plugins/Polygon
       Color: 0; 255; 255       # Màu xanh cyan
-      Enabled: true
+      Enabled: false
       Name: GlobalFootprint
       Topic:
         Value: /global_costmap/published_footprint

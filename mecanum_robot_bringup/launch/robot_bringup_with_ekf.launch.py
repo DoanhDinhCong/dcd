@@ -84,7 +84,7 @@ def generate_launch_description():
             'wheel_radius': 0.075,
             'wheel_base_width': 0.47,
             'wheel_base_length': 0.48,
-            'publish_tf': True,
+            'publish_tf': False,
             'invert_wheels': [True, True, True, True],  
         }],
         output='screen'
@@ -136,7 +136,7 @@ def generate_launch_description():
     # - Cần sửa slam_toolbox_params.yaml và nav2_params.yaml
     #   (xem hướng dẫn bên dưới)
     # ==========================================================================
-    
+    pkg_share = get_package_share_directory('mecanum_robot_bringup')
     robot_localization = Node(
         package='robot_localization',
         executable='ekf_node',

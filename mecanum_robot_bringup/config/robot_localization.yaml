@@ -1,94 +1,104 @@
 # =============================================================================
-# EKF CONFIG - NAV2 STANDARD (MECANUM ROBOT)
-# =============================================================================
-# MỤC ĐÍCH:
-# - Fuse encoder odometry + IMU gyro
-# - Sinh odometry ổn định cho Nav2
-# - Publish TF: odom → base_link
-#
-# TRIẾT LÝ NAV2:
-# - Encoder: chỉ dùng VẬN TỐC (vx, vy, wz)
-# - IMU: chỉ dùng GYRO Z (wz)
-# - KHÔNG fuse pose, orientation, acceleration
+# ROBOT_LOCALIZATION CONFIG - FIXED INDENTATION
 # =============================================================================
 
 ekf_filter_node:
   ros__parameters:
-
-    # =========================================================================
-    # BASIC
-    # =========================================================================
-    use_sim_time: false
-    frequency: 50.0
-    sensor_timeout: 0.2
+    # Frequency
+    frequency: 20.0
+    sensor_timeout: 0.1
     two_d_mode: true
-
-    publish_tf: true
-    publish_acceleration: false
-    odometry_output_topic: /odometry/filtered
-
-    # =========================================================================
-    # TF FRAMES (BẮT BUỘC ĐÚNG CHUẨN NAV2)
-    # =========================================================================
+    
+    # TF Frames
     map_frame: map
     odom_frame: odom
     base_link_frame: base_link
     world_frame: odom
-
-    # =========================================================================
-    # INPUT 1: ENCODER ODOMETRY
-    # Topic: /odom
-    # DÙNG:
-    # - vx, vy  (vận tốc tuyến tính)
-    # - wz      (vận tốc góc - fallback)
-    # =========================================================================
+    
+    # TF Publishing
+    publish_tf: true
+    publish_acceleration: false
+    
+    # ==========================================================================
+    # ODOM0 - Odometry from wheel encoders
+    # ==========================================================================
     odom0: /odom
-    odom0_config: [false, false, false,   # x, y, z
-                   false, false, false,   # roll, pitch, yaw
-                   true,  true,  false,   # vx, vy, vz
-                   false, false, true,    # vroll, vpitch, wz
-                   false, false, false]   # ax, ay, az
-
-    odom0_queue_size: 10
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  true,  false,
+                   false, false, false,
+                   false, false, false]
     odom0_differential: false
     odom0_relative: false
-
-    # =========================================================================
-    # INPUT 2: IMU
-    # Topic: /imu/data
-    # DÙNG:
-    # - wz (gyro Z)
-    # =========================================================================
+    odom0_queue_size: 10
+    
+    # ==========================================================================
+    # IMU0 - IMU data from HWT901B (SỬA ĐÚNG)
+    # ==========================================================================
+    # GIẢI THÍCH:
+    # - Bật YAW (index 5): Dùng góc từ IMU để tránh drift góc quay
+    # - Bật GYRO WZ (index 11): Dùng vận tốc góc từ gyroscope (chính xác)
+    # - TẮT ACCELERATION (index 12): Tránh double integration gây nhiễu
+    # - TẮT remove_gravitational_acceleration: Vì không fuse Roll/Pitch
     imu0: /imu/data
-    imu0_config: [false, false, false,    # x, y, z
-                  false, false, false,    # roll, pitch, yaw
-                  false, false, false,    # vx, vy, vz
-                  false, false, true,     # vroll, vpitch, wz
-                  false, false, false]    # ax, ay, az
-
-    imu0_queue_size: 10
+    imu0_config: [false, false, false,      # x, y, z position - IMU không có
+                  false, false, true,       # roll, pitch, YAW ✅ - Dùng góc từ IMU
+                  false, false, false,      # vx, vy, vz velocity - Không dùng
+                  false, false, true,       # vroll, vpitch, WZ ✅ - Dùng gyro
+                  false, false, false]      # ax, ay, az ❌ - TẮT vì nhiễu double integration
+    
     imu0_differential: false
-    imu0_relative: false
-    imu0_remove_gravitational_acceleration: true
-
-    # =========================================================================
-    # PROCESS NOISE (TỐI GIẢN – ỔN ĐỊNH)
-    # =========================================================================
-    process_noise_covariance:
-      [0.05, 0,    0,    0,    0,    0,
-       0,    0.05, 0,    0,    0,    0,
-       0,    0,    1e6,  0,    0,    0,
-       0,    0,    0,    1e6,  0,    0,
-       0,    0,    0,    0,    1e6,  0,
-       0,    0,    0,    0,    0,    0.1]
-
-    # =========================================================================
-    # INITIAL ESTIMATE COVARIANCE
-    # =========================================================================
-    initial_estimate_covariance:
-      [1e-9, 0,    0,    0,    0,    0,
-       0,    1e-9, 0,    0,    0,    0,
-       0,    0,    1e6,  0,    0,    0,
-       0,    0,    0,    1e6,  0,    0,
-       0,    0,    0,    0,    1e6,  0,
-       0,    0,    0,    0,    0,    1e-9]
+    imu0_relative: true
+    imu0_remove_gravitational_acceleration: false  # ❌ TẮT vì không fuse Roll/Pitch
+    imu0_queue_size: 10
+    
+    # IMU Covariance - Tin YAW và GYRO nhiều, không dùng acceleration
+    imu0_orientation_covariance: [1e6, 0.0, 0.0,
+                                  0.0, 1e6, 0.0,
+                                  0.0, 0.0, 0.05]  # ✅ Yaw tin cậy cao
+    
+    imu0_angular_velocity_covariance: [1e6, 0.0, 0.0,
+                                       0.0, 1e6, 0.0,
+                                       0.0, 0.0, 0.02]  # ✅ Gyro wz tin cậy cao
+    
+    imu0_linear_acceleration_covariance: [1e6, 0.0, 0.0,  # ❌ Không dùng
+                                          0.0, 1e6, 0.0,
+                                          0.0, 0.0, 1e6]
+    
+    # ==========================================================================
+    # Process Noise Covariance
+    # ==========================================================================
+    process_noise_covariance: [0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.05, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.06, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.025,0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015]
+    
+    # ==========================================================================
+    # Initial Covariance
+    # ==========================================================================
+    initial_estimate_covariance: [1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,  0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9, 0.0,
+                                  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  1e-9]
