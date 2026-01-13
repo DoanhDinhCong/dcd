@@ -1,271 +1,298 @@
 # ==============================================================================
-# NAV2 CONFIG - MECANUM ROBOT
+# NAV2 CONFIG - MECANUM ROBOT (ĐÃ CHÚ THÍCH ĐẦY ĐỦ)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# MAP SERVER
+# MAP SERVER - Quản lý bản đồ tĩnh
 # ------------------------------------------------------------------------------
 map_server:
   ros__parameters:
-    use_sim_time: false
-    yaml_filename: /home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/maps/mapt8.yaml
+    use_sim_time: false  # false = dùng thời gian thực, true = thời gian simulation (Gazebo)
+    yaml_filename: /home/dcd/mecanum_robot_ws/src/mecanum_robot_bringup/maps/mapt8.yaml  # Đường dẫn file bản đồ YAML
 
 # ------------------------------------------------------------------------------
-# BT NAVIGATOR
+# BT NAVIGATOR - Điều phối Behavior Tree (não của Nav2)
 # ------------------------------------------------------------------------------
 bt_navigator:
   ros__parameters:
-    use_sim_time: false
-    global_frame: map
-    robot_base_frame: base_link
-    odom_topic: /odometry/filtered
-    bt_loop_duration: 10
-    default_server_timeout: 20
+    use_sim_time: false             # Dùng thời gian thực
+    global_frame: map               # Frame bản đồ toàn cục
+    robot_base_frame: base_link     # Frame gốc robot
+    odom_topic: /odometry/filtered  # Topic odometry (đã fuse IMU)
+    bt_loop_duration: 10            # Chu kỳ behavior tree (ms) - 10ms = 100Hz
+    default_server_timeout: 20      # Timeout mặc định cho action servers (giây)
 
 # ------------------------------------------------------------------------------
-# CONTROLLER SERVER (DWB)
+# CONTROLLER SERVER (DWB) - Điều khiển chuyển động cục bộ
 # ------------------------------------------------------------------------------
 controller_server:
   ros__parameters:
-    use_sim_time: false
-    controller_frequency: 20.0
-    odom_topic: /odometry/filtered
+    use_sim_time: false               # Thời gian thực
+    controller_frequency: 20.0        # Tần số tính toán cmd_vel (Hz) - 20Hz = 50ms/lần
+    odom_topic: /odometry/filtered    # Topic odometry (fused)
 
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.001
-    min_theta_velocity_threshold: 0.001
+    # === NGƯỠNG VẬN TỐC TỐI THIỂU ===
+    min_x_velocity_threshold: 0.001       # Vận tốc X < 0.001 m/s = coi như đứng yên
+    min_y_velocity_threshold: 0.001       # Vận tốc Y < 0.001 m/s = coi như không trượt ngang
+    min_theta_velocity_threshold: 0.001   # Vận tốc góc < 0.001 rad/s = coi như không quay
 
-    progress_checker_plugin: "progress_checker"
-    goal_checker_plugins: ["goal_checker"]
-    controller_plugins: ["FollowPath"]
+    # === PLUGINS ===
+    progress_checker_plugin: "progress_checker"  # Plugin kiểm tra tiến độ
+    goal_checker_plugins: ["goal_checker"]       # Plugin kiểm tra đã đến đích chưa
+    controller_plugins: ["FollowPath"]           # Plugin điều khiển (DWB local planner)
 
+    # === PROGRESS CHECKER - Kiểm tra robot có tiến bộ không ===
     progress_checker:
-      plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.15
-      movement_time_allowance: 15.0
+      plugin: "nav2_controller::SimpleProgressChecker"  # Plugin đơn giản
+      required_movement_radius: 0.15                    # Robot phải di chuyển ít nhất 15cm trong khoảng thời gian
+      movement_time_allowance: 15.0                     # Thời gian cho phép (giây) - 15s không di chuyển = bị kẹt
 
+    # === GOAL CHECKER - Kiểm tra đã đến đích ===
     goal_checker:
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.30
-      yaw_goal_tolerance: 0.35
-      stateful: true
+      plugin: "nav2_controller::SimpleGoalChecker"  # Plugin đơn giản
+      xy_goal_tolerance: 0.2                       # Sai số vị trí cho phép 20cm (tăng từ 0.1 cho mecanum)
+      yaw_goal_tolerance: 0.35                      # Sai số góc cho phép 0.35 rad (~20 độ)
+      stateful: true                                # Giữ trạng thái (đã đến đích thì không check lại)
 
+    # === FOLLOW PATH (DWB LOCAL PLANNER) ===
     FollowPath:
-      plugin: "dwb_core::DWBLocalPlanner"
+      plugin: "dwb_core::DWBLocalPlanner"  # Dynamic Window Approach planner
 
-      # ================= VẬN TỐC =================
-      min_vel_x: 0.0           # ❌ KHÔNG ĐI LÙI
-      min_vel_y: -0.1
-      max_vel_x: 0.10
-      max_vel_y: 0.1
-      max_vel_theta: 0.10
+      # ================= GIỚI HẠN VẬN TỐC =================
+      min_vel_x: -0.05      # Vận tốc X tối thiểu 0 (không lùi)
+      min_vel_y: 0.0      # Vận tốc Y tối thiểu 0 (mecanum có thể trượt ngang âm)
+      max_vel_x: 0.05      # Vận tốc X tối đa 0.2 m/s (tiến)
+      max_vel_y: 0.0      # Vận tốc Y tối đa 0 (không trượt ngang - differential drive mode)
+      max_vel_theta: 0.5  # Vận tốc góc tối đa 0.5 rad/s (~28.6 độ/s)
 
-      min_speed_xy: 0.0
-      max_speed_xy: 0.10
-      min_speed_theta: 0.0
+      min_speed_xy: 0.0       # Tốc độ tuyến tính tối thiểu 0 m/s
+      max_speed_xy: 0.05       # Tốc độ tuyến tính tối đa 0.1 m/s (sqrt(vx²+vy²))
+      min_speed_theta: -0.5   # Tốc độ góc tối thiểu -0.5 rad/s (quay ngược)
 
-      # ================= GIA TỐC =================
-      acc_lim_x: 0.05
-      acc_lim_y: 0.05
-      acc_lim_theta: 0.05
+      # ================= GIỚI HẠN GIA TỐC =================
+      acc_lim_x: 0.3        # Gia tốc X tối đa 0.3 m/s² (tăng tốc tiến)
+      acc_lim_y: 0.0        # Gia tốc Y (không dùng)
+      acc_lim_theta: 0.8    # Gia tốc góc tối đa 0.5 rad/s² (tăng tốc quay)
 
-      decel_lim_x: -0.05
-      decel_lim_y: -0.05
-      decel_lim_theta: -0.05
+      decel_lim_x: -0.5        # Gia tốc âm (giảm tốc) X: -0.5 m/s² (phanh nhẹ)
+      decel_lim_y: 0.0         # Giảm tốc Y (không dùng)
+      decel_lim_theta: -1.0    # Giảm tốc góc -1.0 rad/s² (phanh quay)
 
-      # ================= SAMPLE =================
-      vx_samples: 20
-      vy_samples: 10
-      vtheta_samples: 15
+      # ================= SỐ MẪU TRAJECTORY =================
+      # DWB tạo nhiều trajectory khả thi rồi chọn tốt nhất
+      vx_samples: 20       # 20 mẫu vận tốc X (0 → 0.2 m/s, chia 20 bước)
+      vy_samples: 0        # 0 mẫu vận tốc Y (không dùng mecanum strafe)
+      vtheta_samples: 15   # 15 mẫu vận tốc góc (-0.5 → 0.5 rad/s)
+      # → Tổng: 20 × 15 = 300 trajectories được đánh giá mỗi chu kỳ
 
-      sim_time: 2.0
-      linear_granularity: 0.05
-      angular_granularity: 0.025
-      transform_tolerance: 0.2
-      short_circuit_trajectory_evaluation: true
-      stateful: true
+      sim_time: 2.0                              # Thời gian mô phỏng trajectory về tương lai (giây)
+      linear_granularity: 0.05                   # Độ chi tiết mô phỏng tuyến tính (5cm)
+      angular_granularity: 0.025                 # Độ chi tiết mô phỏng góc (0.025 rad ~1.4°)
+      transform_tolerance: 0.2                   # Sai số TF cho phép (giây) - 200ms
+      short_circuit_trajectory_evaluation: true  # Dừng sớm nếu trajectory va chạm
+      stateful: true                             # Giữ trạng thái giữa các chu kỳ
 
+      # ================= CÁC CRITIC ĐÁNH GIÁ TRAJECTORY =================
       critics: [
-        "RotateToGoal",
-        "Oscillation",
-        "BaseObstacle",
-        "GoalAlign",
-        "PathAlign",
-        "PathDist",
-        "GoalDist"
+        "RotateToGoal",   # Ưu tiên xoay về phía đích trước
+        "Oscillation",    # Phạt nếu dao động (đi qua lại)
+        "BaseObstacle",   # Tránh va chạm với vật cản
+        "GoalAlign",      # Hướng robot thẳng về đích
+        "PathAlign",      # Đi sát theo đường toàn cục
+        "PathDist",       # Giảm khoảng cách tới đường toàn cục
+        "GoalDist"        # Giảm khoảng cách tới đích
       ]
 
-      # ================= TRỌNG SỐ CRITIC =================
-      BaseObstacle.scale: 0.5
-      PathAlign.scale: 70.0
-      PathDist.scale: 65.0
-      GoalAlign.scale: 16.0
-      GoalDist.scale: 24.0
-      RotateToGoal.scale: 40.0
-      Oscillation.scale: 1.0
+      # ================= TRỌNG SỐ CÁC CRITIC =================
+      # Số càng cao = ưu tiên càng lớn
+      BaseObstacle.scale: 0.4   # Tránh vật cản (GIẢM = dám đi gần hơn)
+      PathAlign.scale: 60.0     # Đi theo đường toàn cục (TĂNG CAO)
+      PathDist.scale: 30.0      # Giảm khoảng cách tới đường (TĂNG CAO)
+      GoalAlign.scale: 0.0      # Hướng về đích (TẮT = không cần align sớm)
+      GoalDist.scale: 24.0      # Tiến gần đích (ưu tiên vừa)
+      RotateToGoal.scale: 10.0  # Xoay về đích trước (ưu tiên thấp)
+      Oscillation.scale: 1.0    # Phạt dao động (thấp = cho phép chỉnh nhẹ)
 
 # ------------------------------------------------------------------------------
-# LOCAL COSTMAP
+# LOCAL COSTMAP - Bản đồ chi phí cục bộ (quanh robot)
 # ------------------------------------------------------------------------------
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
-      global_frame: odom
-      robot_base_frame: base_link
-      use_sim_time: false
-      rolling_window: true
+      update_frequency: 5.0       # Cập nhật costmap 5 lần/giây
+      publish_frequency: 2.0      # Publish costmap 2 lần/giây (tiết kiệm băng thông)
+      global_frame: odom          # Frame tham chiếu: odom (di động theo robot)
+      robot_base_frame: base_link # Frame robot
+      use_sim_time: false         # Thời gian thực
+      rolling_window: true        # Costmap di chuyển theo robot (không cố định)
 
-      width: 4
-      height: 4
-      resolution: 0.05
+      width: 4                     # Chiều rộng costmap 4m (2m mỗi bên robot)
+      height: 4                    # Chiều cao costmap 4m (2m trước + 2m sau)
+      resolution: 0.05             # Độ phân giải 5cm/cell
 
-      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
+      # === FOOTPRINT - Hình dạng robot ===
+      footprint: "[[0.60, 0.32], [0.60, -0.32], [-0.60, -0.32], [-0.60, 0.32]]"
+      # Hình chữ nhật: 0.9m dài × 0.64m rộng
+      # [x, y] theo base_link: trước = +x, trái = +y
 
+      # === PLUGINS (các lớp costmap) ===
       plugins: ["obstacle_layer", "inflation_layer"]
 
+      # === OBSTACLE LAYER - Lớp vật cản động ===
       obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
-        enabled: true
-        observation_sources: scan
+        plugin: "nav2_costmap_2d::ObstacleLayer"  # Plugin nhận dữ liệu sensor
+        enabled: true                             # Bật layer này
+        observation_sources: scan                 # Nguồn dữ liệu: laser scan
         scan:
-          topic: /scan_merged
-          data_type: "LaserScan"
-          clearing: true
-          marking: true
-          obstacle_max_range: 2.5
-          raytrace_max_range: 3.0
+          topic: /scan_merged                     # Topic lidar đã merge
+          data_type: "LaserScan"                  # Loại message
+          clearing: true                          # Xóa vật cản khi không còn thấy
+          marking: true                           # Đánh dấu vật cản khi phát hiện
+          obstacle_max_range: 2.5                 # Phát hiện vật cản tối đa 2.5m
+          raytrace_max_range: 3.0                 # Xóa vật cản (raytrace) tối đa 3.0m
 
+      # === INFLATION LAYER - Lớp phồng vật cản ===
       inflation_layer:
-        plugin: "nav2_costmap_2d::InflationLayer"
-        inflation_radius: 0.50
-        cost_scaling_factor: 8.0
+        plugin: "nav2_costmap_2d::InflationLayer"  # Plugin phồng chi phí
+        inflation_radius: 0.50  # Bán kính phồng 25cm quanh vật cản
+        cost_scaling_factor: 10.0  # Hệ số giảm chi phí (10 = giảm chậm)
+        # Chi phí cao nhất (254) ở vật cản, giảm dần ra ngoài
 
 # ------------------------------------------------------------------------------
-# GLOBAL COSTMAP
+# GLOBAL COSTMAP - Bản đồ chi phí toàn cục
 # ------------------------------------------------------------------------------
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
-      publish_frequency: 1.0
-      global_frame: map
-      robot_base_frame: base_link
-      use_sim_time: false
-      resolution: 0.05
-      track_unknown_space: true
+      update_frequency: 1.0         # Cập nhật chậm hơn (1Hz) - không cần real-time
+      publish_frequency: 1.0        # Publish 1Hz
+      global_frame: map              # Frame tham chiếu: map (cố định)
+      robot_base_frame: base_link    # Frame robot
+      use_sim_time: false             # Thời gian thực
+      resolution: 0.05                # Độ phân giải 5cm/cell (giống local)
+      track_unknown_space: true       # Theo dõi vùng chưa biết (xám trong map)
 
-      footprint: "[[0.45, 0.32], [0.45, -0.32], [-0.45, -0.32], [-0.45, 0.32]]"
+      # === FOOTPRINT ===
+      footprint: "[[0.60, 0.32], [0.60, -0.32], [-0.60, -0.32], [-0.60, 0.32]]"
+      # Giống local costmap
 
+      # === PLUGINS ===
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
 
+      # === STATIC LAYER - Lớp bản đồ tĩnh ===
       static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: true
+        plugin: "nav2_costmap_2d::StaticLayer"  # Plugin load map từ file
+        map_subscribe_transient_local: true     # Subscribe map với QoS transient_local
 
+      # === OBSTACLE LAYER ===
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
-        enabled: true
+        enabled: true                   # Bật để cập nhật vật cản động
         observation_sources: scan
         scan:
           topic: /scan_merged
           data_type: "LaserScan"
-          clearing: true
-          marking: true
+          clearing: true                # Xóa vật cản động khỏi map tĩnh
+          marking: true                 # Đánh dấu vật cản động
 
+      # === INFLATION LAYER ===
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        inflation_radius: 0.50
-        cost_scaling_factor: 8.0
+        inflation_radius: 0.50      # 25cm (giống local)
+        cost_scaling_factor: 10.0   # Hệ số giảm chi phí
 
 # ------------------------------------------------------------------------------
-# PLANNER SERVER
+# PLANNER SERVER - Lập kế hoạch đường đi toàn cục
 # ------------------------------------------------------------------------------
 planner_server:
   ros__parameters:
-    expected_planner_frequency: 20.0
-    use_sim_time: false
-    planner_plugins: ["GridBased"]
+    expected_planner_frequency: 20.0  
+    use_sim_time: false  
+    planner_plugins: ["GridBased"]  
 
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
-      tolerance: 0.3
-      use_astar: true
-      allow_unknown: true
-      use_final_approach_orientation: false
+      plugin: "nav2_navfn_planner/NavfnPlanner"   # NavFn planner (Dijkstra/A*)
+      tolerance: 0.2                              # Sai số đích cho phép 20cm
+      use_astar: true                             # Dùng A* (nhanh hơn Dijkstra)
+      allow_unknown: true                         # Cho phép đi qua vùng unknown (xám)
+      use_final_approach_orientation: false  
 
 # ------------------------------------------------------------------------------
-# BEHAVIOR SERVER
+# BEHAVIOR SERVER - Các hành vi phục hồi
 # ------------------------------------------------------------------------------
 behavior_server:
   ros__parameters:
-    use_sim_time: false
-    cycle_frequency: 10.0
-    global_frame: map
-    robot_base_frame: base_link
-    transform_timeout: 0.1
+    use_sim_time: false           # Thời gian thực
+    cycle_frequency: 10.0        # Tần số kiểm tra behavior 10Hz
+    global_frame: map            # Frame toàn cục
+    robot_base_frame: base_link  # Frame robot
+    transform_timeout: 0.1       # Timeout TF 100ms
 
-    behavior_plugins: ["spin", "backup", "wait"]
+    behavior_plugins: ["spin", "backup", "wait"]  # 3 behavior có sẵn
 
+    # === SPIN - Quay tại chỗ ===
     spin:
-      plugin: "nav2_behaviors/Spin"
-      max_rotational_vel: 0.15
-      min_rotational_vel: 0.05
-      rotational_acc_lim: 0.05
+      plugin: "nav2_behaviors/Spin"  # Plugin quay
+      max_rotational_vel: 0.5         # Tốc độ quay tối đa 0.5 rad/s
+      min_rotational_vel: 0.3         # Tốc độ quay tối thiểu 0.3 rad/s
+      rotational_acc_lim: 1.0         # Gia tốc quay 0.8 rad/s² (quay chậm)
 
+    # === BACKUP - Lùi lại ===
     backup:
-      plugin: "nav2_behaviors/BackUp"
-      backup_dist: 0.15
-      backup_speed: 0.05
+      plugin: "nav2_behaviors/BackUp"  # Plugin lùi
+      backup_dist: 0.3                  # Lùi 30cm
+      backup_speed: 0.1                 # Tốc độ lùi 0.1 m/s
 
+    # === WAIT - Chờ ===
     wait:
-      plugin: "nav2_behaviors/Wait"
-      wait_duration: 5
+      plugin: "nav2_behaviors/Wait"     # Plugin đợi
+      wait_duration: 5                   # Đợi 5 giây
 
 # ------------------------------------------------------------------------------
-# VELOCITY SMOOTHER
+# VELOCITY SMOOTHER - Làm mượt vận tốc
 # ------------------------------------------------------------------------------
 velocity_smoother:
   ros__parameters:
-    use_sim_time: false
-    smoothing_frequency: 20.0
-    feedback: "OPEN_LOOP"
-    scale_velocities: false
+    use_sim_time: false               # Thời gian thực
+    smoothing_frequency: 20.0         # Tần số làm mượt 20Hz
+    feedback: "OPEN_LOOP"             # Chế độ: không dùng feedback (đơn giản hơn)
+    scale_velocities: false           # Không scale vận tốc tự động
 
-    max_velocity: [0.10, 0.10, 0.10]
-    min_velocity: [0.00, -0.10, -0.10]
+    # === GIỚI HẠN VẬN TỐC ===
+    max_velocity: [0.05, 0.0, 0.5]   # [vx_max, vy_max, wz_max]
+    min_velocity: [-0.05, 0.0, -0.5]  # [vx_min, vy_min, wz_min]
 
-    max_accel: [0.05, 0.05, 0.05]
-    max_decel: [-0.05, -0.05, -0.05]
+    # === GIỚI HẠN GIA TỐC ===
+    max_accel: [0.3, 0.0, 0.8]      # [ax_max, ay_max, alpha_max]
+    max_decel: [-0.5, 0.0, -1.0]    # [ax_min, ay_min, alpha_min]
 
-    odom_topic: /odometry/filtered
-    odom_duration: 0.1
+    odom_topic: /odometry/filtered  # Topic odometry (fused)
+    odom_duration: 0.1              # Thời gian lưu odometry 100ms
 
 # ------------------------------------------------------------------------------
-# AMCL
+# AMCL - Định vị Adaptive Monte Carlo
 # ------------------------------------------------------------------------------
 amcl:
   ros__parameters:
-    use_sim_time: false
-    global_frame_id: map
-    odom_frame_id: odom
-    base_frame_id: base_link
-    tf_broadcast: true
-    scan_topic: /scan_merged
-    min_particles: 500
-    max_particles: 2000
+    use_sim_time: false  # Thời gian thực
+    global_frame_id: map  # Frame bản đồ
+    odom_frame_id: odom  # Frame odometry
+    base_frame_id: base_link  # Frame robot
+    tf_broadcast: true  # Publish TF map→odom
+    scan_topic: /scan_merged  # Topic laser scan
+    min_particles: 500  # Số particles tối thiểu (ít hơn = nhanh hơn)
+    max_particles: 2000  # Số particles tối đa (nhiều hơn = chính xác hơn)
 
 # ------------------------------------------------------------------------------
-# SMOOTHER SERVER
+# SMOOTHER SERVER - Làm mượt đường đi
 # ------------------------------------------------------------------------------
 smoother_server:
   ros__parameters:
-    use_sim_time: false
-    smoother_plugins: ["simple_smoother"]
+    use_sim_time: false  # Thời gian thực
+    smoother_plugins: ["simple_smoother"]  # Plugin làm mượt
 
     simple_smoother:
-      plugin: "nav2_smoother::SimpleSmoother"
-      tolerance: 1.0e-10
-      max_its: 1000
-      do_refinement: true
+      plugin: "nav2_smoother::SimpleSmoother"  # Plugin đơn giản
+      tolerance: 1.0e-10  # Sai số hội tụ 10^-10 (rất nhỏ)
+      max_its: 1000  # Số vòng lặp tối đa 1000
+      do_refinement: true  # Làm mịn thêm sau khi hội tụ
